@@ -13,29 +13,27 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
+        'username', // Added
+        'role',     // Added
         'password',
+        'temp_password', // Added this so we can save it
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password',
         'remember_token',
+        'temp_password', // Hide this from API responses for security
     ];
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -51,5 +49,19 @@ class User extends Authenticatable
     public function employee()
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * MODEL EVENT: Auto-clear temp_password when password changes
+     */
+    protected static function booted()
+    {
+        static::updating(function ($user) {
+            // If the 'password' field is being changed...
+            if ($user->isDirty('password')) {
+                // ...delete the temporary password immediately.
+                $user->temp_password = null;
+            }
+        });
     }
 }

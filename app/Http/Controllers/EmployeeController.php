@@ -2,118 +2,121 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Designation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of the employees.
-     */
     public function index()
     {
-        // Fetch employees with their related department and designation
-        // Pagination is better than getting all if you have thousands
-        $employees = Employee::with(['department', 'designation'])
-            ->latest()
-            ->paginate(10);
-
+        $employees = Employee::with(['department', 'designation'])->latest()->paginate(10);
         return view('employees.index', compact('employees'));
     }
 
-    /**
-     * Show the form for creating a new employee.
-     */
     public function create()
     {
-        // We need these for the dropdowns in the "Add Employee" form
-        $departments = Department::all();
-        $designations = Designation::all();
-        
+        if (Auth::user()->role === 'employee') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $departments = Department::where('name', '!=', 'Administration')->get();
+        $designations = Designation::where('name', '!=', 'Super Admin')->get();
+
         return view('employees.create', compact('departments', 'designations'));
     }
 
-    /**
-     * Store a newly created employee in the database.
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:employees,email',
-            'phone' => 'nullable|string|max:20',
-            'employee_id' => 'required|string|unique:employees,employee_id',
-            'department_id' => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+        $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|regex:/^[0-9]+$/',
+            'address' => 'required|string',
             'joining_date' => 'required|date',
-            'basic_salary' => 'required|numeric|min:0',
-            'status' => 'required|in:active,probation,terminated,resigned',
-            'gender' => 'required|in:male,female,other',
+            'designation_id' => 'required',
         ]);
 
-        Employee::create($validated);
+        // --- DEPARTMENT LOGIC ---
+        if ($request->department_id === 'other') {
+            // Validate the NEW name
+            $request->validate(['new_department' => 'required|string|unique:departments,name']);
+            
+            // Save to Database so it shows up next time
+            $department = Department::create(['name' => $request->new_department]);
+            $department_id = $department->id;
+        } else {
+            $request->validate(['department_id' => 'required|exists:departments,id']);
+            $department_id = $request->department_id;
+        }
+        // ------------------------
 
-        return redirect()->route('employees.index')
-            ->with('success', 'Employee created successfully.');
+        // Generate Credentials
+        $baseUsername = strtolower(substr($request->first_name, 0, 1) . $request->last_name);
+        $baseUsername = preg_replace('/[^a-z0-9]/', '', $baseUsername); 
+        $username = $baseUsername;
+        $counter = 1;
+        while (User::where('username', $username)->exists()) {
+            $username = $baseUsername . $counter++;
+        }
+
+        $tempPassword = Str::random(10);
+
+        // Create User
+        $user = User::create([
+            'name' => $request->first_name . ' ' . $request->last_name,
+            'email' => $request->email,
+            'username' => $username,
+            'password' => Hash::make($tempPassword),
+            'temp_password' => $tempPassword,
+            'role' => 'employee',
+        ]);
+
+        // Auto-generate ID
+        $year = date('Y');
+        $lastEmp = Employee::where('employee_id', 'like', "EMP-$year-%")->latest('id')->first();
+        if ($lastEmp) {
+            $parts = explode('-', $lastEmp->employee_id);
+            $nextNum = intval(end($parts)) + 1;
+        } else {
+            $nextNum = 1;
+        }
+        $employeeId = "EMP-$year-" . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+
+        // Create Profile
+        Employee::create([
+            'user_id' => $user->id,
+            'employee_id' => $employeeId,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'joining_date' => $request->joining_date,
+            'department_id' => $department_id, // Uses the ID we determined above
+            'designation_id' => $request->designation_id,
+            'basic_salary' => $request->basic_salary ?? 0,
+            'status' => 'probation',
+            'gender' => $request->gender ?? 'other',
+        ]);
+
+        return view('employees.credentials', [
+            'name' => $user->name,
+            'username' => $username,
+            'password' => $tempPassword,
+            'employee_id' => $employeeId
+        ]);
     }
 
-    /**
-     * Display the specified employee details.
-     */
     public function show(Employee $employee)
     {
-        // Load all related data for the "Employee Profile" view
-        // This allows us to show their Attendance history, Leave history, etc.
-        $employee->load(['department', 'designation', 'attendance', 'leaves', 'payrolls', 'documents']);
-        
+        $employee->load(['department', 'designation', 'attendance', 'leaves']);
         return view('employees.show', compact('employee'));
-    }
-
-    /**
-     * Show the form for editing the specified employee.
-     */
-    public function edit(Employee $employee)
-    {
-        $departments = Department::all();
-        $designations = Designation::all();
-        
-        return view('employees.edit', compact('employee', 'departments', 'designations'));
-    }
-
-    /**
-     * Update the specified employee in storage.
-     */
-    public function update(Request $request, Employee $employee)
-    {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:employees,email,' . $employee->id,
-            'phone' => 'nullable|string|max:20',
-            'department_id' => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
-            'joining_date' => 'required|date',
-            'basic_salary' => 'required|numeric|min:0',
-            'status' => 'required|in:active,probation,terminated,resigned',
-        ]);
-
-        $employee->update($validated);
-
-        return redirect()->route('employees.index')
-            ->with('success', 'Employee updated successfully.');
-    }
-
-    /**
-     * Remove the specified employee from storage.
-     */
-    public function destroy(Employee $employee)
-    {
-        $employee->delete();
-
-        return redirect()->route('employees.index')
-            ->with('success', 'Employee deleted successfully.');
     }
 }

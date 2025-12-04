@@ -28,6 +28,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // --- CUSTOM REDIRECTION LOGIC ---
+        
+        // If the user is a Super Admin, go to the Super Admin Dashboard
+        if ($request->user()->role === 'super_admin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+
+        // Otherwise (HR or Employee), go to the Standard Dashboard
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

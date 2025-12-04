@@ -11,6 +11,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\OnboardingTaskController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\SuperAdminController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -36,12 +37,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update'); 
 
     // Additional Modules
     Route::resource('documents', DocumentController::class);
     Route::resource('onboarding', OnboardingTaskController::class);
     Route::resource('announcements', AnnouncementController::class);
+
+    // SUPER ADMIN ROUTES
+    // Note: The security check (auth()->user()->role === 'super_admin') 
+    // is now handled inside the SuperAdminController's __construct() method.
+    Route::prefix('super-admin')->name('superadmin.')->group(function () {
+        Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/create-hr', [SuperAdminController::class, 'createHr'])->name('createHr');
+        Route::post('/store-hr', [SuperAdminController::class, 'storeHr'])->name('storeHr');
+    });
 });
 
 require __DIR__.'/auth.php';
