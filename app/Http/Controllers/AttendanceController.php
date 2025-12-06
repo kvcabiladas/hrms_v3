@@ -9,100 +9,110 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-    /**
-     * Display a listing of attendance records.
-     */
+    // Define the timezone here for consistency
+    // You can change 'Asia/Manila' to your specific timezone if needed
+    private $timezone = 'Asia/Manila';
+
     public function index()
     {
         $user = Auth::user();
 
-        // BLOCK SUPER ADMIN
         if ($user->role === 'super_admin') {
             abort(403, 'Super Admins do not manage or view attendance.');
         }
 
         $query = Attendance::with('employee')->latest('date');
 
-        // IF User is a regular Employee, show ONLY their own data
         if ($user->role === 'employee') {
             if ($user->employee) {
                 $query->where('employee_id', $user->employee->id);
             } else {
-                $query->where('id', 0); // Show empty if no profile
+                $query->where('id', 0);
             }
         }
 
-        // HR sees everyone by default (no filter needed)
-
         $attendances = $query->paginate(15);
+        
+        // Calculate Stats (Using Local Timezone)
+        $stats = ['present' => 0, 'late' => 0, 'hours' => 0];
+        if ($user->employee) {
+            $monthlyRecords = Attendance::where('employee_id', $user->employee->id)
+                ->whereMonth('date', Carbon::now($this->timezone)->month) // Fix month check
+                ->get();
+            $stats['present'] = $monthlyRecords->count();
+            $stats['late'] = $monthlyRecords->where('status', 'late')->count();
+            $stats['hours'] = $monthlyRecords->sum('total_hours');
+        }
             
-        return view('attendance.index', compact('attendances'));
+        return view('attendance.index', compact('attendances', 'stats'));
     }
 
-    /**
-     * Store a newly created resource (Clock In).
-     */
     public function store(Request $request)
     {
         if (Auth::user()->role === 'super_admin') { abort(403); }
 
         $employee = Auth::user()->employee;
-        
-        if (!$employee) {
-            return back()->with('error', 'No employee profile linked to this user account.');
-        }
+        if (!$employee) return back()->with('error', 'No employee profile linked.');
 
-        // 1. TIME RESTRICTION: Cannot clock in before 8:00 AM
-        $currentTime = now();
-        $startTime = Carbon::createFromTime(8, 0, 0); 
+        // 1. GET CURRENT TIME IN LOCAL TIMEZONE
+        $currentTime = Carbon::now($this->timezone);
+        
+        // 2. SET START TIME IN LOCAL TIMEZONE (08:00 AM)
+        $startTime = Carbon::createFromTime(8, 0, 0, $this->timezone); 
 
         if ($currentTime->lessThan($startTime)) {
-            return back()->with('error', 'You cannot clock in before 8:00 AM.');
+            // Optional: Show them how much time is left
+            $diff = $currentTime->diffInMinutes($startTime);
+            return back()->with('error', "You cannot clock in before 08:00. Please wait $diff minutes.");
         }
 
-        // 2. Check duplicate
         $exists = Attendance::where('employee_id', $employee->id)
-            ->where('date', now()->toDateString())
+            ->where('date', $currentTime->toDateString())
             ->exists();
 
         if ($exists) {
             return back()->with('error', 'You have already clocked in today.');
         }
 
-        // 3. Late Logic (After 8:15 AM)
+        // 3. Late Logic (After 08:15)
         $status = 'present';
-        $lateTime = Carbon::createFromTime(8, 15, 0);
+        $lateTime = Carbon::createFromTime(8, 15, 0, $this->timezone);
         if ($currentTime->greaterThan($lateTime)) {
             $status = 'late';
         }
 
         Attendance::create([
             'employee_id' => $employee->id,
-            'date' => now(),
-            'clock_in' => now(),
+            'date' => $currentTime->toDateString(),
+            'clock_in' => $currentTime->toTimeString(), // Saves local time
             'status' => $status,
         ]);
 
-        return back()->with('success', 'Clocked in successfully!');
+        return back()->with('success', 'Clocked in successfully at ' . $currentTime->format('H:i'));
     }
 
-    /**
-     * Update the specified resource (Clock Out).
-     */
     public function update(Request $request, Attendance $attendance)
     {
         if (Auth::user()->role === 'super_admin') { abort(403); }
 
-        // 1. TIME RESTRICTION: Cannot clock out before 5:00 PM
-        $currentTime = now();
-        $endTime = Carbon::createFromTime(17, 0, 0); 
+        $currentTime = Carbon::now($this->timezone);
+        
+        // 4. END TIME RESTRICTION: 17:00 (5:00 PM)
+        $endTime = Carbon::createFromTime(17, 0, 0, $this->timezone); 
 
         if ($currentTime->lessThan($endTime)) {
-            return back()->with('error', 'You cannot clock out before 5:00 PM.');
+            $diff = $currentTime->diffInMinutes($endTime);
+            return back()->with('error', "You cannot clock out before 17:00. Shift ends in $diff minutes.");
         }
 
+        // Calculate Duration
+        $clockIn = Carbon::parse($attendance->clock_in);
+        // Ensure clockIn is treated as same timezone for calc
+        $totalHours = $clockIn->diffInHours($currentTime) + ($clockIn->diffInMinutes($currentTime) % 60) / 60;
+
         $attendance->update([
-            'clock_out' => now(),
+            'clock_out' => $currentTime->toTimeString(),
+            'total_hours' => round($totalHours, 2),
         ]);
 
         return back()->with('success', 'Clocked out successfully!');

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-// 1. Import ALL Controllers here
+// Import ALL Controllers
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LeaveController;
@@ -13,40 +13,152 @@ use App\Http\Controllers\OnboardingTaskController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SuperAdminController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // Dashboard
+    // =========================================================================
+    // MAIN DASHBOARD ROUTER
+    // =========================================================================
     Route::get('/dashboard', function () {
+        $user = request()->user(); // FIXED: Get user from request helper
+
+        // 1. Redirect Super Admin
+        if ($user->role === 'super_admin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+
+        // 2. Normal Employee -> Employee Dashboard
+        if ($user->role === 'employee') {
+            // Ensure employee profile exists
+            if (!$user->employee) {
+                abort(403, 'No employee profile linked to this account.');
+            }
+
+            $empId = $user->employee->id;
+            $attendanceToday = \App\Models\Attendance::where('employee_id', $empId)->whereDate('date', now())->first();
+            
+            // Calculate Attendance Stats (This Month)
+            $daysPresent = \App\Models\Attendance::where('employee_id', $empId)
+                ->whereMonth('date', now()->month)
+                ->count();
+            
+            $pendingLeaves = \App\Models\Leave::where('employee_id', $empId)->where('status', 'pending')->count();
+            
+            // Get My Recent Payroll
+            $lastPayroll = \App\Models\Payroll::where('employee_id', $empId)->latest()->first();
+
+            return view('dashboard_employee', compact('attendanceToday', 'daysPresent', 'pendingLeaves', 'lastPayroll'));
+        }
+
+        // 3. HR Manager -> Standard HR Dashboard
+        
+        // --- FETCH STATS ---
+        $today = now()->toDateString();
+
+        // Employee Counts
+        $totalEmployees = \App\Models\Employee::where('status', 'active')->count();
+
+        // Attendance Stats
+        $presentToday = \App\Models\Attendance::whereDate('date', $today)->count();
+        $lateToday = \App\Models\Attendance::whereDate('date', $today)->where('status', 'late')->count();
+
+        // Leave Stats
+        $pendingLeavesCount = \App\Models\Leave::where('status', 'pending')->count();
+        
+        $onLeaveToday = \App\Models\Leave::where('status', 'approved')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->count();
+
+        // Action Items
+        $recentLeaves = \App\Models\Leave::with('employee')
+            ->where('status', 'pending')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Graph Data
+        $employeesPerMonth = \App\Models\Employee::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month')
+            ->pluck('count', 'month')
+            ->toArray();
+
+        $chartLabels = [];
+        $chartData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $chartLabels[] = date('F', mktime(0, 0, 0, $i, 1));
+            $chartData[] = $employeesPerMonth[$i] ?? 0;
+        }
+
         return view('dashboard_home', [
-            'totalEmployees' => \App\Models\Employee::count(),
-            'presentToday' => \App\Models\Attendance::whereDate('date', now())->count(),
-            'pendingLeaves' => \App\Models\Leave::where('status', 'pending')->count(),
+            'totalEmployees' => $totalEmployees,
+            'presentToday' => $presentToday,
+            'lateToday' => $lateToday,
+            'onLeaveToday' => $onLeaveToday,
+            'pendingLeavesCount' => $pendingLeavesCount,
+            'pendingLeaves' => $pendingLeavesCount, // Alias
+            'recentLeaves' => $recentLeaves,
+            'chartLabels' => $chartLabels,
+            'chartData' => $chartData,
         ]);
     })->name('dashboard');
 
-    // Core Modules
+    // =========================================================================
+    // CORE HR MODULES
+    // =========================================================================
+    
+    // Employees
     Route::resource('employees', EmployeeController::class);
+    
+    // Attendance
     Route::resource('attendance', AttendanceController::class)->only(['index', 'store', 'update']);
+
+    // LEAVE MANAGEMENT
+    // 1. Specific Actions (Must be before resource)
+    Route::put('/leaves/{leave}/cancel', [LeaveController::class, 'cancel'])->name('leaves.cancel');
+    Route::get('/leaves/settings', [LeaveController::class, 'settings'])->name('leaves.settings');
+    Route::post('/leaves/settings', [LeaveController::class, 'storeType'])->name('leaves.store_type');
+    // 2. Resource
     Route::resource('leaves', LeaveController::class);
+
+    // PAYROLL MANAGEMENT
+    Route::get('/payroll/settings', [PayrollController::class, 'settings'])->name('payroll.settings');
+    Route::post('/payroll/settings', [PayrollController::class, 'updateSettings'])->name('payroll.update_settings');
     Route::resource('payroll', PayrollController::class);
+
+    // Recruitment
     Route::resource('recruitment', RecruitmentController::class);
 
-    // Settings
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update'); 
-
-    // Additional Modules
+    // =========================================================================
+    // ADDITIONAL MODULES
+    // =========================================================================
     Route::resource('documents', DocumentController::class);
     Route::resource('onboarding', OnboardingTaskController::class);
     Route::resource('announcements', AnnouncementController::class);
 
+    // =========================================================================
+    // SETTINGS MODULE
+    // =========================================================================
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::post('/update-company', [SettingsController::class, 'updateCompany'])->name('update_company');
+        Route::post('/update-profile', [SettingsController::class, 'updateProfile'])->name('update_profile');
+        Route::put('/update-password', [SettingsController::class, 'updatePassword'])->name('update_password');
+    });
+
+    // =========================================================================
     // SUPER ADMIN ROUTES
-    // Note: The security check (auth()->user()->role === 'super_admin') 
-    // is now handled inside the SuperAdminController's __construct() method.
+    // =========================================================================
     Route::prefix('super-admin')->name('superadmin.')->group(function () {
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/create-hr', [SuperAdminController::class, 'createHr'])->name('createHr');
