@@ -3,136 +3,101 @@
 @section('title', 'Employee Profile')
 
 @section('content')
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Banner Profile Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8 relative">
+        <!-- Green Background Banner -->
+        <div class="h-32 bg-gradient-to-r from-green-600 to-green-500"></div>
         
-        <!-- Left Sidebar: Profile Card -->
-        <div class="lg:col-span-1 space-y-6">
-            
-            <!-- Basic Info Card -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-                <div class="w-24 h-24 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-3xl mx-auto mb-4 uppercase">
-                    {{ substr($employee->first_name, 0, 1) }}{{ substr($employee->last_name, 0, 1) }}
-                </div>
-                <h2 class="text-xl font-bold text-gray-800">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
-                <p class="text-gray-500 text-sm mb-4">{{ $employee->designation->name ?? 'N/A' }}</p>
-                <div class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-100">
-                    {{ ucfirst($employee->status) }}
-                </div>
-
-                <div class="mt-6 border-t border-gray-100 pt-6 text-left space-y-3">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500">Employee ID</span>
-                        <span class="font-medium text-gray-800">{{ $employee->employee_id }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500">Department</span>
-                        <span class="font-medium text-gray-800">{{ $employee->department->name ?? '-' }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-500">Email</span>
-                        <span class="font-medium text-gray-800 text-xs">{{ $employee->email }}</span>
+        <div class="px-8 pb-8">
+            <div class="relative flex justify-center">
+                <!-- Profile Picture (Centered & Overlapping) -->
+                <div class="absolute -top-12 w-24 h-24 rounded-full bg-white p-1 shadow-lg">
+                    <div class="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-2xl font-bold uppercase">
+                        {{ substr($employee->first_name, 0, 1) }}{{ substr($employee->last_name, 0, 1) }}
                     </div>
                 </div>
             </div>
 
-            <!-- CREDENTIALS CARD (Only visible to HR/Admin) -->
-            @if(Auth::user()->role !== 'employee') 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Login Credentials</h3>
-                
-                <div class="space-y-4">
-                    <div>
-                        <p class="text-xs text-gray-500 mb-1">Username</p>
-                        <div class="font-mono text-sm bg-gray-50 p-2 rounded border border-gray-200 text-gray-700 flex justify-between items-center">
-                            <span>{{ $employee->user->username ?? 'N/A' }}</span>
-                            @if($employee->user && $employee->user->username)
-                                <button onclick="copyToClipboard('{{ $employee->user->username }}')" class="text-gray-400 hover:text-blue-600 transition" title="Copy Username">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div>
-                        <p class="text-xs text-gray-500 mb-1">Password Status</p>
-                        @if($employee->user && $employee->user->temp_password)
-                            <!-- Show Temp Password with Copy -->
-                            <div class="flex items-center justify-between bg-yellow-50 p-2 rounded border border-yellow-200">
-                                <span class="font-mono text-sm text-yellow-800 font-bold">{{ $employee->user->temp_password }}</span>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="copyToClipboard('{{ $employee->user->temp_password }}')" class="text-yellow-600 hover:text-yellow-800 transition" title="Copy Password">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    </button>
-                                    <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded font-bold">Temp</span>
-                                </div>
-                            </div>
-                            <p class="text-xs text-red-500 mt-2">
-                                * Visible until user changes it.
-                            </p>
-                        @else
-                            <!-- Secure State -->
-                            <div class="flex items-center gap-2 bg-green-50 p-2 rounded border border-green-200 text-green-700">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span class="text-sm font-medium">Secure (Changed by User)</span>
-                            </div>
-                        @endif
-                    </div>
+            <div class="mt-14 text-center">
+                <h2 class="text-2xl font-bold text-gray-900">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
+                <p class="text-green-600 font-medium">{{ $employee->designation->name ?? 'No Designation' }}</p>
+                <div class="flex justify-center gap-4 mt-2 text-sm text-gray-500">
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        ID: {{ $employee->employee_id }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        {{ $employee->email }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        {{ $employee->department->name ?? 'No Dept' }}
+                    </span>
                 </div>
-            </div>
-            @endif
-
-        </div>
-
-        <!-- Right Side: Attendance & Stats -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Recent Attendance</h3>
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th class="px-4 py-2">Date</th>
-                            <th class="px-4 py-2">Clock In</th>
-                            <th class="px-4 py-2">Clock Out</th>
-                            <th class="px-4 py-2">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($employee->attendance->take(5) as $record)
-                        <tr>
-                            <td class="px-4 py-3">{{ $record->date->format('M d, Y') }}</td>
-                            <td class="px-4 py-3 text-green-600 font-mono">{{ \Carbon\Carbon::parse($record->clock_in)->format('H:i') }}</td>
-                            <td class="px-4 py-3 text-red-500 font-mono">{{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '--:--' }}</td>
-                            <td class="px-4 py-3"><span class="text-gray-600 font-medium">{{ ucfirst($record->status) }}</span></td>
-                        </tr>
-                        @empty
-                        <tr><td colspan="4" class="px-4 py-3 text-center text-gray-400">No records found.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <!-- Copy Script -->
-    <script>
-        function copyToClipboard(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert("Copied to clipboard: " + text);
-                });
-            } else {
-                // Fallback for older browsers
-                let textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert("Copied to clipboard: " + text);
-            }
-        }
-    </script>
+    <!-- Suggested Content: Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs text-gray-500 uppercase font-bold">Joining Date</p>
+            <p class="text-lg font-bold text-gray-800">{{ $employee->joining_date->format('M d, Y') }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs text-gray-500 uppercase font-bold">Leaves Taken</p>
+            <p class="text-lg font-bold text-blue-600">{{ $employee->leaves->where('status', 'approved')->count() }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs text-gray-500 uppercase font-bold">Attendance Rate</p>
+            <p class="text-lg font-bold text-green-600">98%</p> <!-- Placeholder calculation -->
+        </div>
+    </div>
+
+    <!-- Bottom Section: Login Credentials & Attendance -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Login Credentials (Only for HR/Admin) -->
+        @if(Auth::user()->role !== 'employee')
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">Login Credentials</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Username</span>
+                    <span class="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{{ $employee->user->username ?? 'N/A' }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Password Status</span>
+                    @if($employee->user->temp_password)
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold">Temp: {{ $employee->user->temp_password }}</span>
+                    @else
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Secure (Changed)</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Recent Attendance -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">Recent Attendance</h3>
+            <table class="w-full text-sm text-left">
+                <thead class="text-gray-500">
+                    <tr><th>Date</th><th>Clock In</th><th>Status</th></tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @forelse($employee->attendance->take(5) as $att)
+                    <tr>
+                        <td class="py-2">{{ $att->date->format('M d') }}</td>
+                        <td class="py-2 font-mono text-green-600">{{ \Carbon\Carbon::parse($att->clock_in)->format('H:i') }}</td>
+                        <td class="py-2"><span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ ucfirst($att->status) }}</span></td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="3" class="py-2 text-center text-gray-400">No records found.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 @endsection

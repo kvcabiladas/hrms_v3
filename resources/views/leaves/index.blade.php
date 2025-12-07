@@ -76,18 +76,30 @@
                                 </button>
 
                             <!-- 2. APPROVE/REJECT (For Pending - HR Only) -->
+                            <!-- HR APPROVE/REJECT BUTTONS (Pending Leaves) -->
                             @elseif($leave->status === 'pending' && Auth::user()->role !== 'employee')
                                 <div class="flex justify-center gap-2">
+                                    
+                                    <!-- APPROVE FORM -->
                                     <form action="{{ route('leaves.update', $leave->id) }}" method="POST">
-                                        @csrf @method('PUT')
+                                        @csrf 
+                                        @method('PUT')
                                         <input type="hidden" name="status" value="approved">
-                                        <button class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700">Approve</button>
+                                        <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 border border-green-700 transition">
+                                            Approve
+                                        </button>
                                     </form>
+
+                                    <!-- REJECT FORM -->
                                     <form action="{{ route('leaves.update', $leave->id) }}" method="POST">
-                                        @csrf @method('PUT')
+                                        @csrf 
+                                        @method('PUT')
                                         <input type="hidden" name="status" value="rejected">
-                                        <button class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300">Reject</button>
+                                        <button type="submit" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300 border border-gray-300 transition">
+                                            Reject
+                                        </button>
                                     </form>
+                                    
                                 </div>
                             
                             <!-- 3. CANCEL BUTTON (For Pending - Employee Only) [NEWLY ADDED] -->

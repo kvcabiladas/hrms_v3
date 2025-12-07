@@ -40,11 +40,8 @@ class SuperAdminController extends Controller
 
     public function createHr()
     {
-        // FILTER: Hide Administration and Super Admin options
-        $departments = Department::where('name', '!=', 'Administration')->get();
-        $designations = Designation::where('name', '!=', 'Super Admin')->get();
-        
-        return view('superadmin.create_hr', compact('departments', 'designations'));
+        // No longer need to fetch departments/designations
+        return view('superadmin.create_hr');
     }
 
     public function storeHr(Request $request)
@@ -56,10 +53,18 @@ class SuperAdminController extends Controller
             'phone' => 'required|string',
             'address' => 'required|string',
             'joining_date' => 'required|date',
-            'department_id' => 'required',
-            'designation_id' => 'required',
         ]);
 
+        // 1. AUTO-ASSIGN ROLE: Fetch the specific HR IDs
+        // Note: These names must match what is in your DatabaseSeeder
+        $hrDept = Department::where('name', 'Human Resources')->orWhere('name', 'HR')->first();
+        $hrDesig = Designation::where('name', 'HR Manager')->first();
+
+        if (!$hrDept || !$hrDesig) {
+            return back()->with('error', 'System Error: "Human Resources" department or "HR Manager" position not found in database. Please run seeders.');
+        }
+
+        // 2. Generate Credentials
         $initials = substr($request->first_name, 0, 1);
         $baseUsername = strtolower($initials . $request->last_name);
         $baseUsername = preg_replace('/[^a-z0-9]/', '', $baseUsername); 
@@ -85,6 +90,7 @@ class SuperAdminController extends Controller
         }
         $employeeId = "HR-$year-" . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
 
+        // 3. Create User
         $user = User::create([
             'name' => $request->first_name . ' ' . $request->last_name,
             'email' => $request->email,
@@ -94,6 +100,7 @@ class SuperAdminController extends Controller
             'role' => 'hr',
         ]);
 
+        // 4. Create Employee Profile (With Auto-assigned Dept/Position)
         Employee::create([
             'user_id' => $user->id,
             'employee_id' => $employeeId,
@@ -103,8 +110,8 @@ class SuperAdminController extends Controller
             'phone' => $request->phone,
             'address' => $request->address,
             'joining_date' => $request->joining_date,
-            'department_id' => $request->department_id,
-            'designation_id' => $request->designation_id,
+            'department_id' => $hrDept->id,      // AUTO-ASSIGNED
+            'designation_id' => $hrDesig->id,    // AUTO-ASSIGNED
             'basic_salary' => 0, 
             'status' => 'active',
             'gender' => 'other', 

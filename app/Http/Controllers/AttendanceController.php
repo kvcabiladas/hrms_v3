@@ -9,35 +9,32 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-    // Define the timezone here for consistency
-    // You can change 'Asia/Manila' to your specific timezone if needed
     private $timezone = 'Asia/Manila';
 
     public function index()
     {
         $user = Auth::user();
-
-        if ($user->role === 'super_admin') {
-            abort(403, 'Super Admins do not manage or view attendance.');
-        }
+        if ($user->role === 'super_admin') abort(403);
 
         $query = Attendance::with('employee')->latest('date');
 
+        // Allow HR to filter by date range
+        if (request('start_date') && request('end_date')) {
+            $query->whereBetween('date', [request('start_date'), request('end_date')]);
+        }
+
         if ($user->role === 'employee') {
-            if ($user->employee) {
-                $query->where('employee_id', $user->employee->id);
-            } else {
-                $query->where('id', 0);
-            }
+            $user->employee ? $query->where('employee_id', $user->employee->id) : $query->where('id', 0);
         }
 
         $attendances = $query->paginate(15);
         
-        // Calculate Stats (Using Local Timezone)
         $stats = ['present' => 0, 'late' => 0, 'hours' => 0];
         if ($user->employee) {
+            $now = Carbon::now($this->timezone);
             $monthlyRecords = Attendance::where('employee_id', $user->employee->id)
-                ->whereMonth('date', Carbon::now($this->timezone)->month) // Fix month check
+                ->whereMonth('date', $now->month)
+                ->whereYear('date', $now->year)
                 ->get();
             $stats['present'] = $monthlyRecords->count();
             $stats['late'] = $monthlyRecords->where('status', 'late')->count();
@@ -49,72 +46,45 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
-        if (Auth::user()->role === 'super_admin') { abort(403); }
-
         $employee = Auth::user()->employee;
         if (!$employee) return back()->with('error', 'No employee profile linked.');
 
-        // 1. GET CURRENT TIME IN LOCAL TIMEZONE
-        $currentTime = Carbon::now($this->timezone);
+        $now = Carbon::now($this->timezone);
         
-        // 2. SET START TIME IN LOCAL TIMEZONE (08:00 AM)
-        $startTime = Carbon::createFromTime(8, 0, 0, $this->timezone); 
+        // Simple start time restriction
+        $start = Carbon::createFromTime(8, 0, 0, $this->timezone);
+        if ($now->lessThan($start)) return back()->with('error', 'Cannot clock in before 8:00 AM.');
 
-        if ($currentTime->lessThan($startTime)) {
-            // Optional: Show them how much time is left
-            $diff = $currentTime->diffInMinutes($startTime);
-            return back()->with('error', "You cannot clock in before 08:00. Please wait $diff minutes.");
-        }
-
-        $exists = Attendance::where('employee_id', $employee->id)
-            ->where('date', $currentTime->toDateString())
-            ->exists();
-
-        if ($exists) {
-            return back()->with('error', 'You have already clocked in today.');
-        }
-
-        // 3. Late Logic (After 08:15)
-        $status = 'present';
-        $lateTime = Carbon::createFromTime(8, 15, 0, $this->timezone);
-        if ($currentTime->greaterThan($lateTime)) {
-            $status = 'late';
+        if (Attendance::where('employee_id', $employee->id)->where('date', $now->toDateString())->exists()) {
+            return back()->with('error', 'Already clocked in today.');
         }
 
         Attendance::create([
             'employee_id' => $employee->id,
-            'date' => $currentTime->toDateString(),
-            'clock_in' => $currentTime->toTimeString(), // Saves local time
-            'status' => $status,
+            'date' => $now->toDateString(),
+            'clock_in' => $now->toTimeString(),
+            'status' => $now->gt(Carbon::createFromTime(8, 15, 0, $this->timezone)) ? 'late' : 'present',
         ]);
 
-        return back()->with('success', 'Clocked in successfully at ' . $currentTime->format('H:i'));
+        return back()->with('success', 'Clocked in successfully!');
     }
 
     public function update(Request $request, Attendance $attendance)
     {
-        if (Auth::user()->role === 'super_admin') { abort(403); }
-
-        $currentTime = Carbon::now($this->timezone);
+        $now = Carbon::now($this->timezone);
         
-        // 4. END TIME RESTRICTION: 17:00 (5:00 PM)
-        $endTime = Carbon::createFromTime(17, 0, 0, $this->timezone); 
-
-        if ($currentTime->lessThan($endTime)) {
-            $diff = $currentTime->diffInMinutes($endTime);
-            return back()->with('error', "You cannot clock out before 17:00. Shift ends in $diff minutes.");
-        }
-
-        // Calculate Duration
-        $clockIn = Carbon::parse($attendance->clock_in);
-        // Ensure clockIn is treated as same timezone for calc
-        $totalHours = $clockIn->diffInHours($currentTime) + ($clockIn->diffInMinutes($currentTime) % 60) / 60;
+        // Ensure date matches the clock-in date for calculation
+        $clockIn = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in, $this->timezone);
+        
+        // Force calculation to be positive
+        $diff = $clockIn->diffInMinutes($now);
+        $hours = round($diff / 60, 2);
 
         $attendance->update([
-            'clock_out' => $currentTime->toTimeString(),
-            'total_hours' => round($totalHours, 2),
+            'clock_out' => $now->toTimeString(),
+            'total_hours' => $hours,
         ]);
 
-        return back()->with('success', 'Clocked out successfully!');
+        return back()->with('success', 'Clocked out. Total hours: ' . $hours);
     }
 }
