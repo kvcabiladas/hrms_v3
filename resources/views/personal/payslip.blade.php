@@ -23,11 +23,12 @@
                     <h1 class="text-3xl font-bold mb-2">PAYSLIP</h1>
                     <p class="text-green-100">{{ $payroll->employee->first_name }} {{ $payroll->employee->last_name }}</p>
                     <p class="text-green-100 text-sm">{{ $payroll->employee->designation->name ?? 'N/A' }} •
-                        {{ $payroll->employee->department->name ?? 'N/A' }}</p>
+                        {{ $payroll->employee->department->name ?? 'N/A' }}
+                    </p>
                 </div>
                 <div class="text-right">
                     <p class="text-green-100 text-sm">Payment Date</p>
-                    <p class="text-2xl font-bold">{{ $payroll->payment_date->format('M d, Y') }}</p>
+                    <p class="text-2xl font-bold">{{ $payroll->created_at->format('M d, Y') }}</p>
                 </div>
             </div>
         </div>
@@ -38,7 +39,7 @@
             <div class="mb-8 pb-6 border-b border-gray-200">
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Period Covered</h3>
                 <p class="text-lg font-semibold text-gray-800">
-                    {{ $payroll->period_start->format('F d, Y') }} - {{ $payroll->period_end->format('F d, Y') }}
+                    {{ $payroll->month_year }}
                 </p>
             </div>
 

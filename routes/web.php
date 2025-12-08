@@ -12,6 +12,8 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\OnboardingTaskController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DesignationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,9 +88,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->take(5)
             ->get();
 
-        // Graph Data
-        $employeesPerMonth = \App\Models\Employee::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->whereYear('created_at', date('Y'))
+        // Recruitment Growth Chart (Use joining_date, not created_at)
+        $employeesPerMonth = \App\Models\Employee::selectRaw('MONTH(joining_date) as month, COUNT(*) as count')
+            ->whereYear('joining_date', date('Y'))
+            ->whereNotNull('joining_date')
             ->groupBy('month')
             ->pluck('count', 'month')
             ->toArray();
@@ -136,6 +139,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payroll/settings', [PayrollController::class, 'settings'])->name('payroll.settings');
     Route::post('/payroll/settings', [PayrollController::class, 'updateSettings'])->name('payroll.update_settings');
     Route::resource('payroll', PayrollController::class);
+
+    // DEPARTMENT MANAGEMENT
+    Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
+    Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+    Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+    // DESIGNATION/JOB MANAGEMENT
+    Route::post('/designations', [DesignationController::class, 'store'])->name('designations.store');
+    Route::put('/designations/{designation}', [DesignationController::class, 'update'])->name('designations.update');
+    Route::delete('/designations/{designation}', [DesignationController::class, 'destroy'])->name('designations.destroy');
 
     // Recruitment
     Route::resource('recruitment', RecruitmentController::class);

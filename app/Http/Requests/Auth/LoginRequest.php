@@ -33,7 +33,13 @@ class LoginRequest extends FormRequest
         // Logic: Check if input is a valid email. If not, treat it as a username.
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (! Auth::attempt([$fieldType => $login, 'password' => $this->input('password')], $this->boolean('remember'))) {
+        // Make username case-insensitive by converting to lowercase
+        $credentials = [
+            $fieldType => $fieldType === 'username' ? strtolower($login) : $login,
+            'password' => $this->input('password')
+        ];
+
+        if (!Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -46,7 +52,7 @@ class LoginRequest extends FormRequest
 
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
         event(new Lockout($this));
@@ -61,6 +67,6 @@ class LoginRequest extends FormRequest
 
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('login')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->input('login')) . '|' . $this->ip());
     }
 }

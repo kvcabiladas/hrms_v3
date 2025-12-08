@@ -23,7 +23,8 @@ class EmployeeController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%");
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -36,8 +37,13 @@ class EmployeeController extends Controller
             $query->orderBy($sort, $direction);
         }
 
-        $employees = $query->paginate(10);
-        return view('employees.index', compact('employees'));
+        $employees = $query->paginate(15);
+
+        // Get departments and designations for the tabs
+        $departments = Department::withCount('employees')->orderBy('name')->get();
+        $designations = Designation::with('department')->withCount('employees')->orderBy('name')->get();
+
+        return view('employees.index', compact('employees', 'departments', 'designations'));
     }
 
     // ... create, store, show methods remain as defined previously ...

@@ -134,18 +134,16 @@ class PayrollController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // For now, return a simple text response
-        // In production, you would use a PDF library like DomPDF or TCPDF
-        $content = "PAYSLIP\n\n";
-        $content .= "Employee: " . $payroll->employee->first_name . " " . $payroll->employee->last_name . "\n";
-        $content .= "Payment Date: " . $payroll->payment_date->format('M d, Y') . "\n";
-        $content .= "Period: " . $payroll->period_start->format('M d') . " - " . $payroll->period_end->format('M d, Y') . "\n\n";
-        $content .= "Basic Salary: ₱" . number_format($payroll->basic_salary, 2) . "\n";
-        $content .= "Deductions: ₱" . number_format($payroll->total_deductions, 2) . "\n";
-        $content .= "Net Pay: ₱" . number_format($payroll->net_salary, 2) . "\n";
+        // Load relationships
+        $payroll->load(['employee.department', 'employee.designation']);
 
-        return response($content)
-            ->header('Content-Type', 'text/plain')
-            ->header('Content-Disposition', 'attachment; filename="payslip_' . $payroll->id . '.txt"');
+        // Generate PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payroll.payslip-pdf', compact('payroll'));
+
+        // Set paper size and orientation
+        $pdf->setPaper('a4', 'portrait');
+
+        // Download the PDF
+        return $pdf->download('payslip_' . $payroll->month_year . '_' . $payroll->employee->employee_id . '.pdf');
     }
 }

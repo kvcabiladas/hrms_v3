@@ -52,6 +52,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all notifications for the user
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class)->latest();
+    }
+
+    /**
+     * Get unread notifications count
+     */
+    public function unreadNotifications()
+    {
+        return $this->notifications()->where('read', false);
+    }
+
+    /**
      * MODEL EVENT: Auto-clear temp_password when password changes
      */
     protected static function booted()

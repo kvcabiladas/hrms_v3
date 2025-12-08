@@ -8,6 +8,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Helpers\NotificationHelper;
 
 class LeaveController extends Controller
 {
@@ -28,11 +29,13 @@ class LeaveController extends Controller
                 'recalled_date' => $request->recalled_date,
             ]);
 
+            // Send notification
+            NotificationHelper::leaveRecalled($leave);
+
             return back()->with('success', 'Employee has been recalled from leave.');
         }
 
         // 2. APPROVE / REJECT LOGIC
-        // We validate that 'status' is present and valid
         $request->validate([
             'status' => 'required|in:approved,rejected',
         ]);
@@ -41,7 +44,23 @@ class LeaveController extends Controller
             'status' => $request->status
         ]);
 
+        // Send notification based on status
+        if ($request->status === 'approved') {
+            NotificationHelper::leaveApproved($leave);
+        } elseif ($request->status === 'rejected') {
+            NotificationHelper::leaveRejected($leave);
+        }
+
         return back()->with('success', 'Leave request has been ' . $request->status . '.');
+    }
+
+    /**
+     * Display the specified leave request
+     */
+    public function show(Leave $leave)
+    {
+        $leave->load(['employee.department', 'type', 'reliefOfficer']);
+        return view('leaves.show', compact('leave'));
     }
 
     // ... (Keep index, settings, etc from previous responses) ...
