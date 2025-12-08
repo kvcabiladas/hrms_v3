@@ -14,10 +14,15 @@ class SettingsController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $employee = $user->employee; 
-        $company = Company::first(); 
+        $employee = $user->employee;
+        $company = Company::first();
 
-        return view('settings.index', compact('user', 'employee', 'company'));
+        // Get emergency contacts from employee's JSON field or default empty array
+        $emergencyContacts = $employee && $employee->emergency_contacts
+            ? json_decode($employee->emergency_contacts, true)
+            : [['name' => '', 'relationship' => '', 'phone' => '']];
+
+        return view('settings.index', compact('user', 'employee', 'company', 'emergencyContacts'));
     }
 
     // 1. Update Company Info (Super Admin Only)
@@ -99,5 +104,31 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('success', 'Password changed successfully. Secure mode active.');
+    }
+
+    // 4. Update Emergency Contacts
+    public function updateEmergencyContacts(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return back()->with('error', 'No employee profile found.');
+        }
+
+        $request->validate([
+            'contacts' => 'required|array',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.relationship' => 'required|string|max:100',
+            'contacts.*.phone' => 'required|string|max:20',
+        ]);
+
+        // Store as JSON in the employee table
+        $employee->update([
+            'emergency_contacts' => json_encode($request->contacts),
+        ]);
+
+        return back()->with('success', 'Emergency contacts updated successfully.');
     }
 }

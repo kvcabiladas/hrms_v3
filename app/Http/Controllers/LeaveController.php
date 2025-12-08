@@ -27,7 +27,7 @@ class LeaveController extends Controller
                 'status' => 'recalled',
                 'recalled_date' => $request->recalled_date,
             ]);
-            
+
             return back()->with('success', 'Employee has been recalled from leave.');
         }
 
@@ -43,9 +43,9 @@ class LeaveController extends Controller
 
         return back()->with('success', 'Leave request has been ' . $request->status . '.');
     }
-    
+
     // ... (Keep index, settings, etc from previous responses) ...
-    
+
     // RE-INCLUDING OTHER METHODS HERE JUST IN CASE YOU NEED THE FULL FILE:
     public function index()
     {
@@ -57,14 +57,14 @@ class LeaveController extends Controller
         }
 
         $leaves = $query->paginate(10);
-        
+
         $stats = [
             'pending' => Leave::where('status', 'pending')->count(),
             'approved' => Leave::where('status', 'approved')->count(),
             'on_leave' => Leave::where('status', 'approved')
-                            ->whereDate('start_date', '<=', now())
-                            ->whereDate('end_date', '>=', now())
-                            ->count(),
+                ->whereDate('start_date', '<=', now())
+                ->whereDate('end_date', '>=', now())
+                ->count(),
         ];
 
         $reliefOfficers = Employee::where('status', 'active')->get();
@@ -74,14 +74,16 @@ class LeaveController extends Controller
 
     public function settings()
     {
-        if (Auth::user()->role === 'employee') abort(403);
+        if (Auth::user()->role === 'employee')
+            abort(403);
         $types = LeaveType::all();
         return view('leaves.settings', compact('types'));
     }
 
     public function storeType(Request $request)
     {
-        if (Auth::user()->role === 'employee') abort(403);
+        if (Auth::user()->role === 'employee')
+            abort(403);
         $request->validate(['name' => 'required|string', 'days_allowed' => 'required|integer']);
         LeaveType::create($request->only(['name', 'days_allowed']));
         return back()->with('success', 'Leave type created.');
@@ -90,9 +92,9 @@ class LeaveController extends Controller
     public function create()
     {
         $types = \App\Models\LeaveType::all();
-        
+
         // Fetch employees where the linked User is NOT a super_admin
-        $reliefOfficers = \App\Models\Employee::whereHas('user', function($q) {
+        $reliefOfficers = \App\Models\Employee::whereHas('user', function ($q) {
             $q->where('role', '!=', 'super_admin');
         })->where('status', 'active')->get();
 
@@ -109,7 +111,8 @@ class LeaveController extends Controller
             'relief_officer_id' => 'nullable|exists:employees,id',
         ]);
 
-        if (!Auth::user()->employee) return back()->with('error', 'No employee profile linked.');
+        if (!Auth::user()->employee)
+            return back()->with('error', 'No employee profile linked.');
 
         Leave::create([
             'employee_id' => Auth::user()->employee->id,
@@ -127,9 +130,44 @@ class LeaveController extends Controller
 
     public function cancel(Leave $leave)
     {
-        if ($leave->employee_id !== Auth::user()->employee->id) abort(403);
-        if ($leave->status !== 'pending') return back()->with('error', 'Cannot cancel processed request.');
+        if ($leave->employee_id !== Auth::user()->employee->id)
+            abort(403);
+        if ($leave->status !== 'pending')
+            return back()->with('error', 'Cannot cancel processed request.');
         $leave->delete();
         return back()->with('success', 'Request cancelled.');
+    }
+
+    /**
+     * Personal leaves view - shows only the logged-in user's leave history
+     */
+    public function personalLeaves()
+    {
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return redirect()->route('dashboard')->with('error', 'No employee profile linked.');
+        }
+
+        // Get user's leave history
+        $leaves = Leave::with(['type', 'reliefOfficer'])
+            ->where('employee_id', $employee->id)
+            ->latest()
+            ->paginate(15);
+
+        // Get leave types with usage statistics
+        $leaveTypes = LeaveType::all()->map(function ($type) use ($employee) {
+            $usedDays = Leave::where('employee_id', $employee->id)
+                ->where('leave_type_id', $type->id)
+                ->where('status', 'approved')
+                ->whereYear('start_date', now()->year)
+                ->sum('days');
+
+            $type->days_used = $usedDays;
+            return $type;
+        });
+
+        return view('personal.leaves', compact('leaves', 'leaveTypes'));
     }
 }

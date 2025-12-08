@@ -20,17 +20,17 @@ class EmployeeController extends Controller
         // Search
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('employee_id', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%");
             });
         }
 
         // Sort
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
-        
+
         // Allowed sort columns
         if (in_array($sort, ['first_name', 'last_name', 'employee_id', 'created_at'])) {
             $query->orderBy($sort, $direction);
@@ -39,18 +39,67 @@ class EmployeeController extends Controller
         $employees = $query->paginate(10);
         return view('employees.index', compact('employees'));
     }
-    
+
     // ... create, store, show methods remain as defined previously ...
     // Copy the store method with the 'Other' department logic from previous response if needed.
-    
+
     // I will include the show method here as it needs the Profile Banner update
     public function show(Employee $employee)
     {
         $employee->load(['department', 'designation', 'attendance', 'leaves']);
         return view('employees.show', compact('employee'));
     }
-    
+
     // Stub for create/store to keep file valid (assume you have them from previous steps)
-    public function create() { /* ... */ }
-    public function store(Request $request) { /* ... */ }
+    public function create()
+    {
+        $departments = Department::all();
+        $designations = Designation::all();
+        return view('employees.create', compact('departments', 'designations'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:employees,email',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string',
+            'date_of_birth' => 'required|date',
+            'gender' => 'required|in:Male,Female,Other',
+            'department_id' => 'required|exists:departments,id',
+            'designation_id' => 'required|exists:designations,id',
+            'joining_date' => 'required|date',
+            'basic_salary' => 'required|numeric|min:0',
+        ]);
+
+        // Generate employee ID
+        $lastEmployee = Employee::latest('id')->first();
+        $nextId = $lastEmployee ? $lastEmployee->id + 1 : 1;
+        $validated['employee_id'] = 'EMP' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $validated['status'] = 'active';
+
+        // Generate access code
+        $validated['access_code'] = strtoupper(Str::random(6));
+
+        // Create employee
+        $employee = Employee::create($validated);
+
+        // Create user account
+        $username = strtolower($validated['first_name'] . '.' . $validated['last_name']);
+        $tempPassword = Str::random(8);
+
+        User::create([
+            'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+            'email' => $validated['email'],
+            'username' => $username,
+            'password' => Hash::make($tempPassword),
+            'temp_password' => $tempPassword,
+            'role' => 'employee',
+            'employee_id' => $employee->id,
+        ]);
+
+        return redirect()->route('employees.index')->with('success', 'Employee created successfully!');
+    }
 }

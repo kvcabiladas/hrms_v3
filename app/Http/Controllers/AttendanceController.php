@@ -14,7 +14,8 @@ class AttendanceController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if ($user->role === 'super_admin') abort(403);
+        if ($user->role === 'super_admin')
+            abort(403);
 
         $query = Attendance::with('employee')->latest('date');
 
@@ -28,7 +29,7 @@ class AttendanceController extends Controller
         }
 
         $attendances = $query->paginate(15);
-        
+
         $stats = ['present' => 0, 'late' => 0, 'hours' => 0];
         if ($user->employee) {
             $now = Carbon::now($this->timezone);
@@ -40,20 +41,22 @@ class AttendanceController extends Controller
             $stats['late'] = $monthlyRecords->where('status', 'late')->count();
             $stats['hours'] = $monthlyRecords->sum('total_hours');
         }
-            
+
         return view('attendance.index', compact('attendances', 'stats'));
     }
 
     public function store(Request $request)
     {
         $employee = Auth::user()->employee;
-        if (!$employee) return back()->with('error', 'No employee profile linked.');
+        if (!$employee)
+            return back()->with('error', 'No employee profile linked.');
 
         $now = Carbon::now($this->timezone);
-        
+
         // Simple start time restriction
         $start = Carbon::createFromTime(8, 0, 0, $this->timezone);
-        if ($now->lessThan($start)) return back()->with('error', 'Cannot clock in before 8:00 AM.');
+        if ($now->lessThan($start))
+            return back()->with('error', 'Cannot clock in before 8:00 AM.');
 
         if (Attendance::where('employee_id', $employee->id)->where('date', $now->toDateString())->exists()) {
             return back()->with('error', 'Already clocked in today.');
@@ -72,10 +75,10 @@ class AttendanceController extends Controller
     public function update(Request $request, Attendance $attendance)
     {
         $now = Carbon::now($this->timezone);
-        
+
         // Ensure date matches the clock-in date for calculation
         $clockIn = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in, $this->timezone);
-        
+
         // Force calculation to be positive
         $diff = $clockIn->diffInMinutes($now);
         $hours = round($diff / 60, 2);
@@ -86,5 +89,78 @@ class AttendanceController extends Controller
         ]);
 
         return back()->with('success', 'Clocked out. Total hours: ' . $hours);
+    }
+
+    /**
+     * Personal attendance view - shows only the logged-in user's attendance
+     */
+    public function personalAttendance()
+    {
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return redirect()->route('dashboard')->with('error', 'No employee profile linked.');
+        }
+
+        $attendances = Attendance::where('employee_id', $employee->id)
+            ->latest('date')
+            ->paginate(15);
+
+        $now = Carbon::now($this->timezone);
+        $monthlyRecords = Attendance::where('employee_id', $employee->id)
+            ->whereMonth('date', $now->month)
+            ->whereYear('date', $now->year)
+            ->get();
+
+        $stats = [
+            'present' => $monthlyRecords->count(),
+            'late' => $monthlyRecords->where('status', 'late')->count(),
+            'hours' => $monthlyRecords->sum('total_hours'),
+        ];
+
+        return view('personal.attendance', compact('attendances', 'stats'));
+    }
+
+    /**
+     * HR attendance view - shows company-wide attendance with analytics
+     */
+    public function hrAttendance()
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'hr') {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Get date range from request or default to current week
+        $startDate = request('start_date', now()->startOfWeek()->toDateString());
+        $endDate = request('end_date', now()->endOfWeek()->toDateString());
+
+        // Get all attendance records for the date range
+        $attendances = Attendance::with('employee')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->latest('date')
+            ->paginate(20);
+
+        // Weekly attendance statistics
+        $weeklyStats = Attendance::whereBetween('date', [$startDate, $endDate])
+            ->selectRaw('DATE(date) as day, COUNT(*) as count')
+            ->groupBy('day')
+            ->pluck('count', 'day')
+            ->toArray();
+
+        // Present employees today
+        $presentToday = Attendance::with('employee')
+            ->whereDate('date', now()->toDateString())
+            ->get();
+
+        $stats = [
+            'total_present' => $presentToday->count(),
+            'total_late' => $presentToday->where('status', 'late')->count(),
+            'weekly_data' => $weeklyStats,
+        ];
+
+        return view('hr.attendance', compact('attendances', 'stats', 'presentToday', 'startDate', 'endDate'));
     }
 }

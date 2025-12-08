@@ -24,7 +24,7 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+
     // =========================================================================
     // MAIN DASHBOARD ROUTER
     // =========================================================================
@@ -45,14 +45,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             $empId = $user->employee->id;
             $attendanceToday = \App\Models\Attendance::where('employee_id', $empId)->whereDate('date', now())->first();
-            
+
             // Calculate Attendance Stats (This Month)
             $daysPresent = \App\Models\Attendance::where('employee_id', $empId)
                 ->whereMonth('date', now()->month)
                 ->count();
-            
+
             $pendingLeaves = \App\Models\Leave::where('employee_id', $empId)->where('status', 'pending')->count();
-            
+
             // Get My Recent Payroll
             $lastPayroll = \App\Models\Payroll::where('employee_id', $empId)->latest()->first();
 
@@ -60,7 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
 
         // 3. HR Manager -> Standard HR Dashboard
-        
+
         // --- FETCH STATS ---
         $today = now()->toDateString();
 
@@ -73,7 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Leave Stats
         $pendingLeavesCount = \App\Models\Leave::where('status', 'pending')->count();
-        
+
         $onLeaveToday = \App\Models\Leave::where('status', 'approved')
             ->whereDate('start_date', '<=', $today)
             ->whereDate('end_date', '>=', $today)
@@ -113,13 +113,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
+
     // =========================================================================
     // CORE HR MODULES
     // =========================================================================
-    
+
     // Employees
     Route::resource('employees', EmployeeController::class);
-    
+
     // Attendance
     Route::resource('attendance', AttendanceController::class)->only(['index', 'store', 'update']);
 
@@ -147,6 +148,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('announcements', AnnouncementController::class);
 
     // =========================================================================
+    // PERSONAL ROUTES (For all authenticated users)
+    // =========================================================================
+    Route::prefix('personal')->name('personal.')->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'personalAttendance'])->name('attendance');
+        Route::get('/leaves', [LeaveController::class, 'personalLeaves'])->name('leaves');
+        Route::get('/payroll', [PayrollController::class, 'personalPayroll'])->name('payroll');
+        Route::get('/payroll/{payroll}/payslip', [PayrollController::class, 'viewPayslip'])->name('payslip');
+        Route::get('/payroll/{payroll}/download', [PayrollController::class, 'downloadPayslip'])->name('payslip.download');
+    });
+
+    // =========================================================================
+    // HR ROUTES (For HR personnel)
+    // =========================================================================
+    Route::prefix('hr')->name('hr.')->middleware('role:hr')->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'hrAttendance'])->name('attendance');
+    });
+
+    // =========================================================================
     // SETTINGS MODULE
     // =========================================================================
     Route::prefix('settings')->name('settings.')->group(function () {
@@ -154,6 +173,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/update-company', [SettingsController::class, 'updateCompany'])->name('update_company');
         Route::post('/update-profile', [SettingsController::class, 'updateProfile'])->name('update_profile');
         Route::put('/update-password', [SettingsController::class, 'updatePassword'])->name('update_password');
+        Route::post('/emergency-contacts', [SettingsController::class, 'updateEmergencyContacts'])->name('update_emergency_contacts');
     });
 
     // =========================================================================
@@ -166,4 +186,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

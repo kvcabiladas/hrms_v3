@@ -3,16 +3,29 @@
 @section('title', 'Employee Profile')
 
 @section('content')
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ route('employees.index') }}"
+            class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-green-600 transition">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18">
+                </path>
+            </svg>
+            Back to Employees
+        </a>
+    </div>
+
     <!-- Banner Profile Header -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8 relative">
         <!-- Green Background Banner -->
         <div class="h-32 bg-gradient-to-r from-green-600 to-green-500"></div>
-        
+
         <div class="px-8 pb-8">
             <div class="relative flex justify-center">
                 <!-- Profile Picture (Centered & Overlapping) -->
                 <div class="absolute -top-12 w-24 h-24 rounded-full bg-white p-1 shadow-lg">
-                    <div class="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-2xl font-bold uppercase">
+                    <div
+                        class="w-full h-full rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl font-bold uppercase">
                         {{ substr($employee->first_name, 0, 1) }}{{ substr($employee->last_name, 0, 1) }}
                     </div>
                 </div>
@@ -21,80 +34,185 @@
             <div class="mt-14 text-center">
                 <h2 class="text-2xl font-bold text-gray-900">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
                 <p class="text-green-600 font-medium">{{ $employee->designation->name ?? 'No Designation' }}</p>
-                <div class="flex justify-center gap-4 mt-2 text-sm text-gray-500">
-                    <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                        ID: {{ $employee->employee_id }}
+                <div class="flex flex-wrap justify-center gap-4 mt-3 text-sm text-gray-600">
+                    <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2">
+                            </path>
+                        </svg>
+                        <strong>ID:</strong> {{ $employee->employee_id }}
                     </span>
-                    <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                            </path>
+                        </svg>
                         {{ $employee->email }}
                     </span>
-                    <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                            </path>
+                        </svg>
                         {{ $employee->department->name ?? 'No Dept' }}
+                    </span>
+                    <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                            </path>
+                        </svg>
+                        {{ $employee->phone }}
                     </span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Suggested Content: Stats Grid -->
+    <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <p class="text-xs text-gray-500 uppercase font-bold">Joining Date</p>
-            <p class="text-lg font-bold text-gray-800">{{ $employee->joining_date->format('M d, Y') }}</p>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-blue-50 rounded-lg">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-bold">Joining Date</p>
+                    <p class="text-lg font-bold text-gray-800">{{ $employee->joining_date->format('M d, Y') }}</p>
+                </div>
+            </div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <p class="text-xs text-gray-500 uppercase font-bold">Leaves Taken</p>
-            <p class="text-lg font-bold text-blue-600">{{ $employee->leaves->where('status', 'approved')->count() }}</p>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-green-50 rounded-lg">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-bold">Leaves Taken</p>
+                    <p class="text-lg font-bold text-green-600">
+                        {{ $employee->leaves->where('status', 'approved')->count() }}</p>
+                </div>
+            </div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <p class="text-xs text-gray-500 uppercase font-bold">Attendance Rate</p>
-            <p class="text-lg font-bold text-green-600">98%</p> <!-- Placeholder calculation -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-purple-50 rounded-lg">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-bold">Total Attendance</p>
+                    <p class="text-lg font-bold text-purple-600">{{ $employee->attendance->count() }} days</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-yellow-50 rounded-lg">
+                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-bold">Basic Salary</p>
+                    <p class="text-lg font-bold text-yellow-600">₱{{ number_format($employee->basic_salary ?? 0, 2) }}</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Bottom Section: Login Credentials & Attendance -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         <!-- Login Credentials (Only for HR/Admin) -->
         @if(Auth::user()->role !== 'employee')
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">Login Credentials</h3>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-500">Username</span>
-                    <span class="font-mono text-sm bg-gray-50 px-2 py-1 rounded">{{ $employee->user->username ?? 'N/A' }}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-500">Password Status</span>
-                    @if($employee->user->temp_password)
-                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold">Temp: {{ $employee->user->temp_password }}</span>
-                    @else
-                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Secure (Changed)</span>
-                    @endif
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11.536 19.464a4.335 4.335 0 00-.77.77l-1.414-1.414a2.5 2.5 0 010-3.536l6.364-6.364L10 7H7a2 2 0 00-2 2v6h2v2h2v2h2">
+                        </path>
+                    </svg>
+                    Login Credentials
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Username</span>
+                        <span
+                            class="font-mono text-sm bg-gray-50 px-3 py-1 rounded">{{ $employee->user->username ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Password Status</span>
+                        @if($employee->user->temp_password)
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded font-bold">Temp:
+                                {{ $employee->user->temp_password }}</span>
+                        @else
+                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded font-bold">Secure (Changed)</span>
+                        @endif
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Role</span>
+                        <span
+                            class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold uppercase">{{ $employee->user->role ?? 'N/A' }}</span>
+                    </div>
                 </div>
             </div>
-        </div>
         @endif
 
-        <!-- Recent Attendance -->
+        <!-- Recent Attendance with Date Filter -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">Recent Attendance</h3>
+            <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Recent Attendance
+                </h3>
+                <span class="text-xs text-gray-500">Last 7 days</span>
+            </div>
             <table class="w-full text-sm text-left">
-                <thead class="text-gray-500">
-                    <tr><th>Date</th><th>Clock In</th><th>Status</th></tr>
+                <thead class="text-gray-500 text-xs">
+                    <tr>
+                        <th class="pb-2">Date</th>
+                        <th class="pb-2">Clock In</th>
+                        <th class="pb-2">Clock Out</th>
+                        <th class="pb-2">Status</th>
+                    </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    @forelse($employee->attendance->take(5) as $att)
-                    <tr>
-                        <td class="py-2">{{ $att->date->format('M d') }}</td>
-                        <td class="py-2 font-mono text-green-600">{{ \Carbon\Carbon::parse($att->clock_in)->format('H:i') }}</td>
-                        <td class="py-2"><span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ ucfirst($att->status) }}</span></td>
-                    </tr>
+                    @forelse($employee->attendance->sortByDesc('date')->take(7) as $att)
+                        <tr>
+                            <td class="py-2">{{ $att->date->format('M d') }}</td>
+                            <td class="py-2 font-mono text-green-600">{{ \Carbon\Carbon::parse($att->clock_in)->format('H:i') }}
+                            </td>
+                            <td class="py-2 font-mono text-red-500">
+                                {{ $att->clock_out ? \Carbon\Carbon::parse($att->clock_out)->format('H:i') : '--:--' }}</td>
+                            <td class="py-2">
+                                <span
+                                    class="text-xs px-2 py-1 rounded {{ $att->status === 'present' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                    {{ ucfirst($att->status) }}
+                                </span>
+                            </td>
+                        </tr>
                     @empty
-                    <tr><td colspan="3" class="py-2 text-center text-gray-400">No records found.</td></tr>
+                        <tr>
+                            <td colspan="4" class="py-4 text-center text-gray-400">No records found.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
