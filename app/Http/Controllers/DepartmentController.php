@@ -40,14 +40,19 @@ class DepartmentController extends Controller
      */
     public function destroy(Department $department)
     {
-        // Delete associated designations
-        $department->designations()->delete();
+        try {
+            // Delete all designations/jobs under this department
+            $department->designations()->delete();
 
-        // Set employees' department to null
-        $department->employees()->update(['department_id' => null]);
+            // Set employees' department_id to null (will show as N/A in views)
+            $department->employees()->update(['department_id' => null]);
 
-        $department->delete();
+            // Delete the department
+            $department->delete();
 
-        return redirect()->route('employees.index', ['tab' => 'departments'])->with('success', 'Department deleted successfully!');
+            return redirect()->route('employees.index', ['tab' => 'departments'])->with('success', 'Department and all associated jobs deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('employees.index', ['tab' => 'departments'])->with('error', 'Failed to delete department: ' . $e->getMessage());
+        }
     }
 }

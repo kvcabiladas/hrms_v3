@@ -32,7 +32,7 @@ class LeaveController extends Controller
             // Send notification
             NotificationHelper::leaveRecalled($leave);
 
-            return back()->with('success', 'Employee has been recalled from leave.');
+            return redirect()->route('leaves.index', ['tab' => 'history'])->with('success', 'Employee has been recalled from leave.');
         }
 
         // 2. APPROVE / REJECT LOGIC
@@ -40,9 +40,14 @@ class LeaveController extends Controller
             'status' => 'required|in:approved,rejected',
         ]);
 
-        $leave->update([
-            'status' => $request->status
-        ]);
+        $updateData = ['status' => $request->status];
+
+        // If rejecting, save the rejection reason
+        if ($request->status === 'rejected' && $request->has('rejection_reason')) {
+            $updateData['rejection_reason'] = $request->rejection_reason;
+        }
+
+        $leave->update($updateData);
 
         // Send notification based on status
         if ($request->status === 'approved') {
@@ -51,7 +56,7 @@ class LeaveController extends Controller
             NotificationHelper::leaveRejected($leave);
         }
 
-        return back()->with('success', 'Leave request has been ' . $request->status . '.');
+        return redirect()->route('leaves.index', ['tab' => 'history'])->with('success', 'Leave request has been ' . $request->status . '.');
     }
 
     /**
@@ -103,9 +108,54 @@ class LeaveController extends Controller
     {
         if (Auth::user()->role === 'employee')
             abort(403);
-        $request->validate(['name' => 'required|string', 'days_allowed' => 'required|integer']);
-        LeaveType::create($request->only(['name', 'days_allowed']));
-        return back()->with('success', 'Leave type created.');
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'days_allowed' => 'required|integer|min:1',
+            'is_recallable' => 'nullable|boolean',
+        ]);
+
+        LeaveType::create([
+            'name' => $request->name,
+            'days_allowed' => $request->days_allowed,
+            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'Leave type created successfully.');
+    }
+
+    public function updateType(Request $request, LeaveType $type)
+    {
+        if (Auth::user()->role === 'employee')
+            abort(403);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'days_allowed' => 'required|integer|min:1',
+            'is_recallable' => 'nullable|boolean',
+        ]);
+
+        $type->update([
+            'name' => $request->name,
+            'days_allowed' => $request->days_allowed,
+            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'Leave type updated successfully.');
+    }
+
+    public function destroyType(LeaveType $type)
+    {
+        if (Auth::user()->role === 'employee')
+            abort(403);
+
+        // Check if any leaves are using this type
+        if ($type->leaves()->count() > 0) {
+            return back()->with('error', 'Cannot delete leave type that is being used.');
+        }
+
+        $type->delete();
+        return back()->with('success', 'Leave type deleted successfully.');
     }
 
     public function create()

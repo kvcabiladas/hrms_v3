@@ -3,264 +3,278 @@
 @section('title', 'Leave Management')
 
 @section('content')
-    <!-- Action Bar -->
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-
-        <!-- Navigation Tabs -->
-        <div class="flex bg-gray-100 p-1 rounded-lg">
-            @if(Auth::user()->role !== 'employee')
-                <a href="{{ route('leaves.settings') }}"
-                    class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition">Leave Settings</a>
-            @endif
-            <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition cursor-not-allowed"
-                disabled>Leave Recall</button>
-            <button class="px-4 py-2 bg-white shadow-sm rounded-md text-sm font-bold text-gray-800">Leave History</button>
-            <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition cursor-not-allowed"
-                disabled>Relief Officers</button>
+    <div x-data="{ 
+                            activeTab: new URLSearchParams(window.location.search).get('tab') || 'history', 
+                            searchQuery: '',
+                            sortLeave: '',
+                            showViewModal: false,
+                            showRejectModal: false,
+                            selectedLeave: null
+                        }" x-init="
+                            // Update URL when tab changes
+                            $watch('activeTab', value => {
+                                const url = new URL(window.location);
+                                url.searchParams.set('tab', value);
+                                window.history.pushState({}, '', url);
+                                // Clear search query when switching tabs
+                                searchQuery = '';
+                            })
+                        ">
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="flex space-x-8">
+                <button @click="activeTab = 'history'"
+                    :class="activeTab === 'history' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-4 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap">
+                    Leave History
+                </button>
+                <button @click="activeTab = 'recall'"
+                    :class="activeTab === 'recall' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-4 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap">
+                    Leave Recall
+                </button>
+                @if(Auth::user()->role !== 'employee')
+                    <button @click="activeTab = 'settings'"
+                        :class="activeTab === 'settings' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap">
+                        Leave Settings
+                    </button>
+                @endif
+            </nav>
         </div>
 
-        <!-- Request Button -->
-        <a href="{{ route('leaves.create') }}"
-            class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 transition shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            New Request
-        </a>
-    </div>
+        <!-- Tab 1: Leave History -->
+        <div x-show="activeTab === 'history'" style="display: none;">
+            <!-- Search and Sort -->
+            <div class="mb-6 flex justify-between items-center">
+                <div class="flex gap-4 flex-1">
+                    <div class="flex-1 max-w-md">
+                        <input type="text" x-model="searchQuery" placeholder="Search by employee name..."
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                    </div>
+                    <select x-model="sortLeave"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                        <option value="">Sort By</option>
+                        <option value="date_desc">Date (Newest)</option>
+                        <option value="date_asc">Date (Oldest)</option>
+                        <option value="name_asc">Name (A-Z)</option>
+                        <option value="name_desc">Name (Z-A)</option>
+                        <option value="status_pending">Status (Pending First)</option>
+                        <option value="status_approved">Status (Approved First)</option>
+                    </select>
+                </div>
+                <a href="{{ route('leaves.create') }}"
+                    class="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Request
+                </a>
+            </div>
 
-    <!-- Ongoing Leave Applications Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-        x-data="{ showRecallModal: false, selectedLeave: null }">
-        <div class="p-6 border-b border-gray-100 bg-gray-50/50">
-            <h3 class="font-bold text-lg text-gray-800">Ongoing Leave Applications</h3>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-gray-600">
-                <thead class="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
-                    <tr>
-                        <th class="px-6 py-4">Name(s)</th>
-                        <th class="px-6 py-4">Duration(s)</th>
-                        <th class="px-6 py-4">Start Date</th>
-                        <th class="px-6 py-4">End Date</th>
-                        <th class="px-6 py-4">Type</th>
-
-                        <th class="px-6 py-4 text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($leaves as $leave)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 font-medium text-gray-900">
-                                {{ $leave->employee->first_name }} {{ $leave->employee->last_name }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-bold">{{ $leave->days }}
-                                    Days</span>
-                            </td>
-                            <td class="px-6 py-4">{{ $leave->start_date->format('d/m/Y') }}</td>
-                            <td class="px-6 py-4">{{ $leave->end_date->format('d/m/Y') }}</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="px-2 py-1 border border-gray-200 rounded text-xs text-gray-600">{{ $leave->type->name ?? 'General' }}</span>
-                            </td>
-
-
-                            <td class="px-6 py-4 text-center">
-
-                                <!-- 1. HR RECALL BUTTON (Only for HR on Approved Leaves) -->
-                                @if($leave->status === 'approved' && Auth::user()->role !== 'employee')
-                                                    <button @click="showRecallModal = true; selectedLeave = {{ json_encode([
-                                        'id' => $leave->id,
-                                        'name' => $leave->employee->first_name . ' ' . $leave->employee->last_name,
-                                        'dept' => $leave->employee->department->name ?? 'N/A',
-                                        'start' => $leave->start_date->format('Y-m-d'),
-                                        'end' => $leave->end_date->format('Y-m-d'),
-                                        'days_remaining' => \Carbon\Carbon::now()->diffInDays($leave->end_date, false) > 0 ? \Carbon\Carbon::now()->diffInDays($leave->end_date) : 0,
-                                        'relief' => $leave->reliefOfficer ? $leave->reliefOfficer->first_name . ' ' . $leave->reliefOfficer->last_name : 'None'
-                                    ]) }}"
-                                                        class="bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm border border-red-600">
-                                                        Recall
-                                                    </button>
-
-                                                    <!-- 2. APPROVE/REJECT (For Pending - HR Only) -->
-                                                    <!-- HR APPROVE/REJECT BUTTONS (Pending Leaves) -->
-                                @elseif($leave->status === 'pending' && Auth::user()->role !== 'employee')
-                                    <div class="flex justify-center gap-2">
-
-                                        <!-- APPROVE FORM -->
-                                        <form action="{{ route('leaves.update', $leave->id) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="status" value="approved">
-                                            <button type="submit"
-                                                class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 border border-green-700 transition">
-                                                Approve
-                                            </button>
-                                        </form>
-
-                                        <!-- REJECT FORM -->
-                                        <form action="{{ route('leaves.update', $leave->id) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="status" value="rejected">
-                                            <button type="submit"
-                                                class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300 border border-gray-300 transition">
-                                                Reject
-                                            </button>
-                                        </form>
-
-                                    </div>
-
-                                    <!-- 3. CANCEL BUTTON (For Pending - Employee Only) [NEWLY ADDED] -->
-                                @elseif($leave->status === 'pending' && Auth::user()->role === 'employee')
-                                    <form action="{{ route('leaves.cancel', $leave->id) }}" method="POST"
-                                        onsubmit="return confirm('Are you sure you want to cancel this request?');">
-                                        @csrf @method('PUT')
-                                        <button
-                                            class="text-xs bg-gray-100 text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 hover:text-red-600 font-medium transition">
-                                            Cancel Request
-                                        </button>
-                                    </form>
-
-                                    <!-- 4. STATUS BADGES (Default View) -->
-                                @else
-                                                <span
-                                                    class="px-2 py-1 rounded text-xs font-bold 
-                                                                                    {{ $leave->status === 'approved' ? 'bg-green-100 text-green-700' :
-                                    ($leave->status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                        ($leave->status === 'recalled' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700')) }}">
-                                                    {{ ucfirst($leave->status) }}
-                                                </span>
-                                @endif
-
-                            </td>
-                        </tr>
-                    @empty
+            <!-- Leave History Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-400 bg-gray-50">No active leave applications
-                                found.</td>
+                            <th class="px-6 py-4">Employee</th>
+                            <th class="px-6 py-4">Duration</th>
+                            <th class="px-6 py-4">Start Date</th>
+                            <th class="px-6 py-4">End Date</th>
+                            <th class="px-6 py-4">Type</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4 text-center">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-for="leave in (() => {
+                                        let filtered = {{ Js::from($leaves) }}.filter(l => 
+                                            (l.employee.first_name + ' ' + l.employee.last_name).toLowerCase().includes(searchQuery.toLowerCase())
+                                        );
+
+                                        // Sort logic
+                                        if (sortLeave === 'date_desc') {
+                                            filtered.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                                        } else if (sortLeave === 'date_asc') {
+                                            filtered.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+                                        } else if (sortLeave === 'name_asc') {
+                                            filtered.sort((a, b) => (a.employee.first_name + ' ' + a.employee.last_name).localeCompare(b.employee.first_name + ' ' + b.employee.last_name));
+                                        } else if (sortLeave === 'name_desc') {
+                                            filtered.sort((a, b) => (b.employee.first_name + ' ' + b.employee.last_name).localeCompare(a.employee.first_name + ' ' + a.employee.last_name));
+                                        } else if (sortLeave === 'status_pending') {
+                                            filtered.sort((a, b) => a.status === 'pending' ? -1 : 1);
+                                        } else if (sortLeave === 'status_approved') {
+                                            filtered.sort((a, b) => a.status === 'approved' ? -1 : 1);
+                                        }
+
+                                        return filtered;
+                                    })()" :key="leave.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 text-gray-900"
+                                    x-text="leave.employee.first_name + ' ' + leave.employee.last_name"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="leave.days + ' Days'"></td>
+                                <td class="px-6 py-4 text-gray-900"
+                                    x-text="new Date(leave.start_date).toLocaleDateString()"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="new Date(leave.end_date).toLocaleDateString()">
+                                </td>
+                                <td class="px-6 py-4 text-gray-900" x-text="leave.type?.name || 'General'"></td>
+                                <td class="px-6 py-4 text-gray-900"
+                                    x-text="leave.status.charAt(0).toUpperCase() + leave.status.slice(1)"></td>
+                                <td class="px-6 py-4 text-center">
+                                    <button @click="selectedLeave = leave; showViewModal = true"
+                                        class="text-green-600 hover:text-green-800 font-medium text-sm">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">{{ $leaves->links() }}</div>
 
-        <!-- ========================== -->
-        <!-- RECALL MODAL (Alpine.js) -->
-        <!-- ========================== -->
-        <div x-show="showRecallModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;"
-            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <!-- Tab 2: Leave Recall -->
+        <div x-show="activeTab === 'recall'" style="display: none;">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Leave Recall</h3>
+                <p class="text-gray-600 text-sm">Recall functionality will be displayed here.</p>
+                <p class="text-gray-500 text-xs mt-2">Feature coming soon</p>
+            </div>
+        </div>
 
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Tab 3: Leave Settings (HR Only) -->
+        <div x-show="activeTab === 'settings'" style="display: none;">
+            @if(Auth::user()->role !== 'employee')
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Leave Type Settings</h3>
+                    <p class="text-gray-600 text-sm mb-4">Manage leave types and their settings.</p>
+                    <a href="{{ route('leaves.settings') }}"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        Go to Leave Settings
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </div>
+            @endif
+        </div>
 
-                <!-- Overlay -->
-                <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="showRecallModal = false">
-                    <div class="absolute inset-0 bg-gray-900 opacity-75"></div>
+        <!-- View Leave Modal -->
+        <div x-show="showViewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showViewModal = false">
                 </div>
 
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="relative bg-white rounded-lg max-w-lg w-full p-6" x-show="selectedLeave">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Leave Request Details</h3>
 
-                <!-- Modal Content -->
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full"
-                    x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
-
-                    <div class="bg-white p-6">
-                        <div class="flex items-center mb-6">
-                            <div class="rounded-full bg-red-100 p-3 mr-4">
-                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                    </path>
-                                </svg>
+                    <div class="space-y-3 mb-6">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Employee Name</label>
+                            <p class="text-sm font-medium text-gray-900"
+                                x-text="selectedLeave?.employee?.first_name + ' ' + selectedLeave?.employee?.last_name"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Duration</label>
+                                <p class="text-sm font-medium text-gray-900" x-text="selectedLeave?.days + ' Days'"></p>
                             </div>
                             <div>
-                                <h3 class="text-lg leading-6 font-bold text-gray-900">Initiate Leave Recall</h3>
-                                <p class="text-sm text-gray-500">This will notify the employee to return to work.</p>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                                <p class="text-sm font-medium text-gray-900"
+                                    x-text="selectedLeave?.type?.name || 'General'"></p>
                             </div>
                         </div>
-
-                        <!-- Dynamic Form Action -->
-                        <form x-bind:action="'/leaves/' + selectedLeave?.id" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="recall" value="true">
-
-                            <div class="space-y-4">
-                                <!-- Read Only Info -->
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Employee</label>
-                                    <input type="text" x-bind:value="selectedLeave?.name" readonly
-                                        class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-medium">
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Department</label>
-                                        <input type="text" x-bind:value="selectedLeave?.dept" readonly
-                                            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Remaining
-                                            Days</label>
-                                        <input type="text" x-bind:value="selectedLeave?.days_remaining" readonly
-                                            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-bold text-red-500">
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Original
-                                            End</label>
-                                        <input type="text" x-bind:value="selectedLeave?.end" readonly
-                                            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                                    </div>
-
-                                    <!-- ACTION FIELD -->
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-green-700 uppercase tracking-wider mb-1">New
-                                            Return Date</label>
-                                        <input type="date" name="recalled_date" required
-                                            class="w-full px-4 py-2 border-2 border-green-500 rounded-lg text-sm focus:ring-green-500 focus:border-green-500 shadow-sm">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Relief
-                                        Officer</label>
-                                    <input type="text" x-bind:value="selectedLeave?.relief" readonly
-                                        class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                                </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
+                                <p class="text-sm font-medium text-gray-900"
+                                    x-text="selectedLeave ? new Date(selectedLeave.start_date).toLocaleDateString() : ''">
+                                </p>
                             </div>
-
-                            <div class="mt-8 flex gap-3">
-                                <button type="button" @click="showRecallModal = false"
-                                    class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 transition">
-                                    Cancel
-                                </button>
-                                <button type="submit"
-                                    class="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-red-700 shadow-md transition transform hover:scale-105">
-                                    Confirm Recall
-                                </button>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">End Date</label>
+                                <p class="text-sm font-medium text-gray-900"
+                                    x-text="selectedLeave ? new Date(selectedLeave.end_date).toLocaleDateString() : ''"></p>
                             </div>
-                        </form>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Relief Officer</label>
+                            <p class="text-sm font-medium text-gray-900"
+                                x-text="selectedLeave?.relief_officer ? (selectedLeave.relief_officer.first_name + ' ' + selectedLeave.relief_officer.last_name) : 'None'">
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Reason</label>
+                            <p class="text-sm text-gray-700" x-text="selectedLeave?.reason || 'No reason provided'"></p>
+                        </div>
                     </div>
+
+                    @if(Auth::user()->role !== 'employee')
+                        <div class="flex gap-3" x-show="selectedLeave?.status === 'pending'">
+                            <form :action="'/leaves/' + selectedLeave?.id" method="POST" class="flex-1">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit"
+                                    class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium transition">
+                                    Approve
+                                </button>
+                            </form>
+                            <button @click="showViewModal = false; showRejectModal = true"
+                                class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium transition">
+                                Reject
+                            </button>
+                        </div>
+                    @endif
+
+                    <button @click="showViewModal = false"
+                        class="mt-3 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-medium transition">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
 
+        <!-- Reject Modal -->
+        <div x-show="showRejectModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showRejectModal = false">
+                </div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6" x-show="selectedLeave">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Reject Leave Request</h3>
+
+                    <form :action="'/leaves/' + selectedLeave?.id" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="rejected">
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Rejection Reason*</label>
+                            <textarea name="rejection_reason" rows="3" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                placeholder="Please provide a reason for rejection..."></textarea>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="submit"
+                                class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium transition">
+                                Confirm Rejection
+                            </button>
+                            <button type="button" @click="showRejectModal = false; showViewModal = true"
+                                class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-medium transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection

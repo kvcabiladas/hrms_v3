@@ -32,17 +32,17 @@
             </div>
 
             <div class="mt-14 text-center relative">
-                <!-- Edit Icon Button -->
-                @if(Auth::user()->role === 'hr' || Auth::user()->role === 'super_admin')
-                    <button @click="showEditModal = true" 
-                        class="absolute top-0 right-0 p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                    </button>
-                @endif
-                
-                <h2 class="text-2xl font-bold text-gray-900">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
+                <div class="flex items-center justify-center gap-2">
+                    <h2 class="text-2xl font-bold text-gray-900">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
+                    @if(Auth::user()->role === 'hr' || Auth::user()->role === 'super_admin')
+                        <button @click="showEditModal = true"
+                            class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                    @endif
+                </div>
                 <p class="text-green-600 font-medium">{{ $employee->designation->name ?? 'No Designation' }}</p>
                 <div class="flex flex-wrap justify-center gap-4 mt-3 text-sm text-gray-600">
                     <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
@@ -67,7 +67,7 @@
                                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
                             </path>
                         </svg>
-                        {{ $employee->department->name ?? 'No Dept' }}
+                        {{ $employee->department->name ?? 'N/A' }}
                     </span>
                     <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,25 +82,26 @@
         </div>
 
         <!-- Edit Modal -->
-        <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-data="{ action: 'update' }">
             <div class="flex items-center justify-center min-h-screen px-4">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
 
                 <div class="relative bg-white rounded-lg max-w-md w-full p-6">
                     <h3 class="text-lg font-bold text-gray-900 mb-4">Edit Employee Information</h3>
 
-                    <form action="{{ route('employees.update', $employee->id) }}" method="POST">
+                    <form :action="action === 'terminate' ? '{{ route('employees.update', $employee->id) }}' : '{{ route('employees.update', $employee->id) }}'" method="POST">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="action" x-model="action">
                         
                         <div class="space-y-4">
-                            <div>
+                            <div x-show="action === 'update'">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Joining Date</label>
                                 <input type="date" name="joining_date" value="{{ $employee->joining_date->format('Y-m-d') }}" required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
                             </div>
 
-                            <div>
+                            <div x-show="action === 'update'">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
                                 <select name="department_id" required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
@@ -112,7 +113,7 @@
                                 </select>
                             </div>
 
-                            <div>
+                            <div x-show="action === 'update'">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Position</label>
                                 <select name="designation_id" required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
@@ -123,12 +124,39 @@
                                     @endforeach
                                 </select>
                             </div>
+
+                            <div x-show="action === 'terminate'">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Termination Reason*</label>
+                                <textarea name="termination_reason" rows="3" :required="action === 'terminate'"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                    placeholder="Please provide reason for termination..."></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">HR Access Code* (8 digits)</label>
+                                <input type="password" name="access_code" required maxlength="8" pattern="\d{8}"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                    placeholder="Enter 8-digit access code">
+                                <p class="text-xs text-gray-500 mt-1">Required to verify this action</p>
+                            </div>
                         </div>
 
                         <div class="flex gap-3 mt-6">
-                            <button type="submit"
+                            <button type="submit" x-show="action === 'update'"
                                 class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium transition">
                                 Save Changes
+                            </button>
+                            <button type="submit" x-show="action === 'terminate'"
+                                class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium transition">
+                                Confirm Termination
+                            </button>
+                            <button type="button" @click="action = action === 'update' ? 'terminate' : 'update'" x-show="action === 'update'"
+                                class="px-4 bg-red-100 text-red-700 py-2 rounded-lg hover:bg-red-200 font-medium transition">
+                                Terminate
+                            </button>
+                            <button type="button" @click="action = 'update'" x-show="action === 'terminate'"
+                                class="px-4 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-medium transition">
+                                Back
                             </button>
                             <button type="button" @click="showEditModal = false"
                                 class="px-6 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-medium transition">
@@ -142,7 +170,7 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center gap-3 mb-2">
                 <div class="p-2 bg-blue-50 rounded-lg">
@@ -187,21 +215,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="p-2 bg-yellow-50 rounded-lg">
-                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                        </path>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 uppercase font-bold">Basic Salary</p>
-                    <p class="text-lg font-bold text-yellow-600">₱{{ number_format($employee->basic_salary ?? 0, 2) }}</p>
-                </div>
-            </div>
-        </div>
+
     </div>
 
     <!-- Bottom Section: Login Credentials & Attendance -->
@@ -226,13 +240,32 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-500">Password</span>
-                        @if($employee->user->temp_password)
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded font-bold">
-                                {{ $employee->user->temp_password }}</span>
+                        @if($employee->user && $employee->user->temp_password)
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded font-mono" id="tempPassword">
+                                    {{ $employee->user->temp_password }}</span>
+                                <button onclick="copyTempPassword('{{ $employee->user->temp_password }}')" 
+                                    class="text-gray-600 hover:text-green-600 transition" title="Copy password">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        @elseif($employee->user)
+                            <span class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded">Secure (Changed)</span>
                         @else
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded font-bold">Secure (Changed)</span>
+                            <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded">No Account</span>
                         @endif
                     </div>
+                    <script>
+                        function copyTempPassword(text) {
+                            navigator.clipboard.writeText(text).then(function() {
+                                alert('Password copied to clipboard!');
+                            }, function(err) {
+                                console.error('Could not copy text: ', err);
+                            });
+                        }
+                    </script>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-500">Role</span>
                         <span

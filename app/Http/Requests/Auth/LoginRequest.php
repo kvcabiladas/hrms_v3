@@ -33,9 +33,9 @@ class LoginRequest extends FormRequest
         // Logic: Check if input is a valid email. If not, treat it as a username.
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        // Make username case-insensitive by converting to lowercase
+        // Keep credentials case-sensitive (no conversion)
         $credentials = [
-            $fieldType => $fieldType === 'username' ? strtolower($login) : $login,
+            $fieldType => $login,
             'password' => $this->input('password')
         ];
 

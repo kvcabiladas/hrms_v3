@@ -49,12 +49,12 @@
         <aside :class="sidebarOpen ? 'w-64' : 'w-20'"
             class="bg-white border-r border-gray-200 flex flex-col shrink-0 transition-all duration-300 ease-in-out z-20">
             <div class="h-16 flex items-center px-6 border-b border-gray-100 justify-between">
-                <div
-                    class="text-2xl font-bold text-green-600 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                <a href="{{ Auth::user()->role === 'super_admin' ? route('superadmin.dashboard') : route('dashboard') }}"
+                    class="text-2xl font-bold text-green-600 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition">
                     <span
                         class="bg-green-600 text-white min-w-[2rem] h-8 w-8 rounded flex items-center justify-center text-sm">H</span>
                     <span x-show="sidebarOpen" class="transition-opacity duration-300 delay-100">HRMS</span>
-                </div>
+                </a>
             </div>
 
             <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-visible scrollbar-hide">
@@ -160,14 +160,14 @@
                         <span x-show="sidebarOpen">My Payroll</span>
                     </a>
 
-                    {{-- SCENARIO 3: ACCOUNTANT/PAYROLL MANAGER --}}
-                @elseif(Auth::user()->role === 'accountant')
+                    {{-- SCENARIO 3: PAYROLL MANAGER --}}
+                @elseif(Auth::user()->role === 'payroll_manager' || (Auth::user()->employee && Auth::user()->employee->designation && Auth::user()->employee->designation->name === 'Payroll Manager'))
 
                     {{-- COMPANY MENU FIRST --}}
                     <p x-show="sidebarOpen" class="{{ $companyHeader }}">Company</p>
 
-                    <a href="{{ route('dashboard') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('dashboard') ? $activeClasses : $inactiveClasses }}"
+                    <a href="{{ route('payroll-manager.dashboard') }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.dashboard') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'Dashboard')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -177,15 +177,37 @@
                         <span x-show="sidebarOpen">Dashboard</span>
                     </a>
 
-                    <a href="{{ route('payroll.index') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('payroll.*') && !request()->routeIs('personal.payroll') ? $activeClasses : $inactiveClasses }}"
-                        @mouseenter="showTooltip($event, 'Payroll Management')" @mouseleave="hideTooltip()">
+                    <a href="{{ route('payroll-manager.employees') }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.employees') || request()->routeIs('payroll-manager.employee.payroll') ? $activeClasses : $inactiveClasses }}"
+                        @mouseenter="showTooltip($event, 'Employee Payroll')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
                             </path>
                         </svg>
-                        <span x-show="sidebarOpen">Payroll Management</span>
+                        <span x-show="sidebarOpen">Employee Payroll</span>
+                    </a>
+
+                    <a href="{{ route('payroll-manager.rules') }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.rules') ? $activeClasses : $inactiveClasses }}"
+                        @mouseenter="showTooltip($event, 'Payroll Rules')" @mouseleave="hideTooltip()">
+                        <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                            </path>
+                        </svg>
+                        <span x-show="sidebarOpen">Payroll Rules</span>
+                    </a>
+
+                    <a href="{{ route('payroll-manager.templates') }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.templates') ? $activeClasses : $inactiveClasses }}"
+                        @mouseenter="showTooltip($event, 'Designation Templates')" @mouseleave="hideTooltip()">
+                        <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span x-show="sidebarOpen">Designation Templates</span>
                     </a>
 
                     {{-- PERSONAL MENU SECOND --}}
@@ -295,7 +317,17 @@
                         <div class="text-right hidden md:block">
                             <p class="text-sm font-medium text-gray-800">{{ Auth::user()->name }}</p>
                             <p class="text-xs text-gray-500 uppercase">
-                                {{ Auth::user()->role === 'super_admin' ? 'Super Admin' : (Auth::user()->role === 'hr' ? 'HR Personnel' : 'Employee') }}
+                                @php
+                                    $displayRole = 'Employee';
+                                    if (Auth::user()->role === 'super_admin') {
+                                        $displayRole = 'Super Admin';
+                                    } elseif (Auth::user()->role === 'hr') {
+                                        $displayRole = 'HR Personnel';
+                                    } elseif (Auth::user()->role === 'payroll_manager' || (Auth::user()->employee && Auth::user()->employee->designation && Auth::user()->employee->designation->name === 'Payroll Manager')) {
+                                        $displayRole = 'Payroll Manager';
+                                    }
+                                @endphp
+                                {{ $displayRole }}
                             </p>
                         </div>
                         <div
@@ -312,7 +344,7 @@
                         style="display: none;">
                         <!-- Notifications Section -->
                         <div class="border-b border-gray-100">
-                            <button @click="showNotifications = !showNotifications"
+                            <button @click.stop="showNotifications = !showNotifications"
                                 class="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between transition">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
@@ -337,7 +369,8 @@
                             </button>
 
                             <!-- Notifications List -->
-                            <div x-show="showNotifications" x-collapse class="max-h-80 overflow-y-auto bg-gray-50">
+                            <div x-show="showNotifications" x-collapse class="max-h-80 overflow-y-auto bg-gray-50"
+                                @click.stop>
                                 @forelse(auth()->user()->notifications()->limit(5)->get() as $notification)
                                     <div
                                         class="p-3 border-b border-gray-100 hover:bg-white transition {{ $notification->read ? 'bg-gray-50' : 'bg-blue-50' }}">
@@ -389,9 +422,11 @@
                                                 <p class="text-xs font-semibold text-gray-900">{{ $notification->title }}
                                                 </p>
                                                 <p class="text-xs text-gray-600 mt-0.5">
-                                                    {{ Str::limit($notification->message, 50) }}</p>
+                                                    {{ Str::limit($notification->message, 50) }}
+                                                </p>
                                                 <p class="text-xs text-gray-400 mt-1">
-                                                    {{ $notification->created_at->diffForHumans() }}</p>
+                                                    {{ $notification->created_at->diffForHumans() }}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>

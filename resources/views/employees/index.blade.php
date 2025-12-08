@@ -4,22 +4,26 @@
 
 @section('content')
     <div x-data="{ 
-                    activeTab: new URLSearchParams(window.location.search).get('tab') || 'employees', 
-                    searchQuery: '',
-                    showAddDept: false,
-                    showEditDept: false,
-                    showAddJob: false,
-                    showEditJob: false,
-                    selectedDept: null,
-                    selectedJob: null
-                }" x-init="
-                    // Update URL when tab changes
-                    $watch('activeTab', value => {
-                        const url = new URL(window.location);
-                        url.searchParams.set('tab', value);
-                        window.history.pushState({}, '', url);
-                    })
-                ">
+                                                        activeTab: new URLSearchParams(window.location.search).get('tab') || 'employees', 
+                                                        searchQuery: '',
+                                                        sortDept: '',
+                                                        sortJob: '',
+                                                        showAddDept: false,
+                                                        showEditDept: false,
+                                                        showAddJob: false,
+                                                        showEditJob: false,
+                                                        selectedDept: null,
+                                                        selectedJob: null
+                                                    }" x-init="
+                                                        // Update URL when tab changes
+                                                        $watch('activeTab', value => {
+                                                            const url = new URL(window.location);
+                                                            url.searchParams.set('tab', value);
+                                                            window.history.pushState({}, '', url);
+                                                            // Clear search query when switching tabs
+                                                            searchQuery = '';
+                                                        })
+                                                    ">
         <!-- Tab Navigation -->
         <div class="mb-6 border-b border-gray-200">
             <nav class="flex space-x-8">
@@ -48,11 +52,26 @@
 
         <!-- Tab 1: Employees List -->
         <div x-show="activeTab === 'employees'" style="display: none;">
-            <!-- Search Bar -->
+            <!-- Search Bar and Sort -->
             <div class="mb-6 flex justify-between items-center">
-                <div class="flex-1 max-w-md">
-                    <input type="text" x-model="searchQuery" placeholder="Search employees by name, email, or ID..."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                <div class="flex gap-4 flex-1">
+                    <div class="flex-1 max-w-md">
+                        <input type="text" x-model="searchQuery" placeholder="Search employees by name, email, or ID..."
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                    </div>
+                    <select
+                        onchange="window.location.href='{{ route('employees.index') }}?tab=employees&sort=' + this.value"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                        <option value="">Sort By</option>
+                        <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                        <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                        <option value="id_asc" {{ request('sort') == 'id_asc' ? 'selected' : '' }}>ID (Ascending)</option>
+                        <option value="id_desc" {{ request('sort') == 'id_desc' ? 'selected' : '' }}>ID (Descending)</option>
+                        <option value="department_asc" {{ request('sort') == 'department_asc' ? 'selected' : '' }}>Department
+                            (A-Z)</option>
+                        <option value="department_desc" {{ request('sort') == 'department_desc' ? 'selected' : '' }}>
+                            Department (Z-A)</option>
+                    </select>
                 </div>
                 <a href="{{ route('employees.create') }}"
                     class="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
@@ -78,34 +97,21 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <template x-for="employee in {{ json_encode($employees->items()) }}.filter(e => 
-                                e.first_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                e.last_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                e.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
-                            )" :key="employee.id">
+                                                                    e.first_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                                    e.last_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                                    e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                                    e.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
+                                                                )" :key="employee.id">
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-mono text-xs text-gray-600" x-text="employee.employee_id"></td>
-                                <td class="px-6 py-4 font-medium text-gray-900"
-                                    x-text="employee.first_name + ' ' + employee.last_name"></td>
-                                <td class="px-6 py-4 text-gray-600" x-text="employee.email"></td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
-                                        x-text="employee.department?.name || 'N/A'"></span>
+                                <td class="px-6 py-4 text-gray-900" x-text="employee.employee_id"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="employee.first_name + ' ' + employee.last_name">
                                 </td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium"
-                                        x-text="employee.designation?.name || 'N/A'"></span>
-                                </td>
+                                <td class="px-6 py-4 text-gray-900" x-text="employee.email"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="employee.department?.name || 'N/A'"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="employee.designation?.name || 'N/A'"></td>
                                 <td class="px-6 py-4 text-center">
                                     <a :href="`/employees/${employee.id}`"
-                                        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs font-medium transition">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                            </path>
-                                        </svg>
+                                        class="text-green-600 hover:text-green-800 font-medium text-sm">
                                         View
                                     </a>
                                 </td>
@@ -176,34 +182,28 @@
                             @endphp
                             @forelse($attendanceRecords as $record)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 font-medium text-gray-900">
+                                    <td class="px-6 py-4 text-gray-900">
                                         {{ $record->employee->first_name }} {{ $record->employee->last_name }}
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                                            {{ $record->employee->department->name ?? 'N/A' }}
-                                        </span>
+                                    <td class="px-6 py-4 text-gray-900">
+                                        {{ $record->employee->department->name ?? 'N/A' }}
                                     </td>
-                                    <td class="px-6 py-4">{{ $record->date->format('M d, Y') }}</td>
-                                    <td class="px-6 py-4 font-mono text-green-600">
+                                    <td class="px-6 py-4 text-gray-900">{{ $record->date->format('M d, Y') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">
                                         {{ \Carbon\Carbon::parse($record->clock_in)->format('H:i') }}
                                     </td>
-                                    <td class="px-6 py-4 font-mono text-red-500">
+                                    <td class="px-6 py-4 text-gray-900">
                                         {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '--:--' }}
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 text-gray-900">
                                         @if($record->total_hours)
-                                            <span class="font-bold text-gray-800">{{ $record->total_hours }}</span> hrs
+                                            {{ $record->total_hours }} hrs
                                         @else
-                                            <span class="text-gray-400">-</span>
+                                            -
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span
-                                            class="px-2.5 py-1 rounded-full text-xs font-medium 
-                                                        {{ $record->status === 'present' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-                                            {{ ucfirst($record->status) }}
-                                        </span>
+                                    <td class="px-6 py-4 text-gray-900">
+                                        {{ ucfirst($record->status) }}
                                     </td>
                                 </tr>
                             @empty
@@ -241,7 +241,7 @@
                         <input type="text" placeholder="Search departments..." x-model="searchQuery"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
                     </div>
-                    <select
+                    <select x-model="sortDept"
                         class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
                         <option value="">Sort By</option>
                         <option value="name_asc">Name (A-Z)</option>
@@ -265,27 +265,40 @@
                         <tr>
                             <th class="px-6 py-4">Department Name</th>
                             <th class="px-6 py-4">Employees</th>
-                            <th class="px-6 py-4 text-center">Actions</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <template
-                            x-for="dept in {{ json_encode($departments) }}.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))"
-                            :key="dept.id">
+                        <template x-for="dept in (() => {
+                                                    let filtered = {{ Js::from($departments) }}.filter(d => 
+                                                        d.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                                    );
+
+                                                    // Sort logic
+                                                    if (sortDept === 'name_asc') {
+                                                        filtered.sort((a, b) => a.name.localeCompare(b.name));
+                                                    } else if (sortDept === 'name_desc') {
+                                                        filtered.sort((a, b) => b.name.localeCompare(a.name));
+                                                    } else if (sortDept === 'employees_desc') {
+                                                        filtered.sort((a, b) => b.employees_count - a.employees_count);
+                                                    } else if (sortDept === 'employees_asc') {
+                                                        filtered.sort((a, b) => a.employees_count - b.employees_count);
+                                                    }
+
+                                                    return filtered;
+                                                })()" :key="dept.id">
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-4 font-medium text-gray-900" x-text="dept.name"></td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold"
-                                        x-text="(dept.employees_count || 0) + ' employees'"></span>
+                                <td class="px-6 py-4 text-gray-900" x-text="(dept.employees_count || 0) + ' employees'">
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <button @click="selectedDept = dept; showEditDept = true"
-                                        class="text-green-600 hover:text-green-800 text-xs font-medium mr-3 transition">Edit</button>
+                                        class="text-green-600 hover:text-green-800 text-sm font-medium mr-3 transition">Edit</button>
                                     <form :action="`/departments/${dept.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this department? All associated jobs will be deleted and employees will be set to N/A.')"
-                                            class="text-red-600 hover:text-red-800 text-xs font-medium transition">Delete</button>
+                                            class="text-green-600 hover:text-green-800 text-sm font-medium transition">Delete</button>
                                     </form>
                                 </td>
                             </tr>
@@ -369,7 +382,7 @@
                         <input type="text" placeholder="Search jobs..." x-model="searchQuery"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
                     </div>
-                    <select
+                    <select x-model="sortJob"
                         class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
                         <option value="">Sort By</option>
                         <option value="name_asc">Job Title (A-Z)</option>
@@ -399,27 +412,38 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <template
-                            x-for="job in {{ json_encode($designations) }}.filter(j => j.name.toLowerCase().includes(searchQuery.toLowerCase()))"
-                            :key="job.id">
+                        <template x-for="job in (() => {
+                                                let filtered = {{ Js::from($designations) }}.filter(j => 
+                                                    j.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                                );
+
+                                                // Sort logic
+                                                if (sortJob === 'name_asc') {
+                                                    filtered.sort((a, b) => a.name.localeCompare(b.name));
+                                                } else if (sortJob === 'name_desc') {
+                                                    filtered.sort((a, b) => b.name.localeCompare(a.name));
+                                                } else if (sortJob === 'department_asc') {
+                                                    filtered.sort((a, b) => (a.department?.name || '').localeCompare(b.department?.name || ''));
+                                                } else if (sortJob === 'employees_desc') {
+                                                    filtered.sort((a, b) => (b.employees_count || 0) - (a.employees_count || 0));
+                                                } else if (sortJob === 'employees_asc') {
+                                                    filtered.sort((a, b) => (a.employees_count || 0) - (b.employees_count || 0));
+                                                }
+
+                                                return filtered;
+                                            })()" :key="job.id">
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-medium text-gray-900" x-text="job.name"></td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
-                                        x-text="job.department?.name || 'N/A'"></span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-bold"
-                                        x-text="(job.employees_count || 0) + ' employees'"></span>
-                                </td>
+                                <td class="px-6 py-4 text-gray-900" x-text="job.name"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="job.department?.name || 'N/A'"></td>
+                                <td class="px-6 py-4 text-gray-900" x-text="(job.employees_count || 0) + ' employees'"></td>
                                 <td class="px-6 py-4 text-center">
                                     <button @click="selectedJob = job; showEditJob = true"
-                                        class="text-green-600 hover:text-green-800 text-xs font-medium mr-3 transition">Edit</button>
+                                        class="text-green-600 hover:text-green-800 text-sm font-medium mr-3 transition">Edit</button>
                                     <form :action="`/designations/${job.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this job? Employees with this job will be set to N/A.')"
-                                            class="text-red-600 hover:text-red-800 text-xs font-medium transition">Delete</button>
+                                            class="text-green-600 hover:text-green-800 text-sm font-medium transition">Delete</button>
                                     </form>
                                 </td>
                             </tr>
@@ -440,13 +464,7 @@
                         <form action="{{ route('designations.store') }}" method="POST">
                             @csrf
                             <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
-                                <input type="text" name="name" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Department*</label>
                                 <select name="department_id" required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
                                     <option value="">Select Department</option>
@@ -454,6 +472,12 @@
                                         <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Job Title*</label>
+                                <input type="text" name="name" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
                             </div>
 
                             <div class="flex gap-3">

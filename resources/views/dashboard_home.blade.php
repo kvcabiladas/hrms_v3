@@ -17,70 +17,78 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
         <!-- Total Employees -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z">
-                        </path>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Employees</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-1 text-right">{{ $totalEmployees }}</h3>
+        <a href="{{ route('employees.index', ['tab' => 'employees']) }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Employees</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-1 text-right">{{ $totalEmployees }}</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Present Today -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Present Today</p>
-                    <h3 class="text-3xl font-bold text-green-600 mt-1 text-right">{{ $presentToday }}</h3>
+        <a href="{{ route('employees.index', ['tab' => 'attendance']) }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Present Today</p>
+                        <h3 class="text-3xl font-bold text-green-600 mt-1 text-right">{{ $presentToday }}</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Late Today -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-yellow-50 text-yellow-600 rounded-lg flex-shrink-0">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Late Arrivals</p>
-                    <h3 class="text-3xl font-bold text-yellow-600 mt-1 text-right">{{ $lateToday ?? 0 }}</h3>
+        <a href="{{ route('employees.index', ['tab' => 'attendance']) }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-yellow-50 text-yellow-600 rounded-lg flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Late Arrivals</p>
+                        <h3 class="text-3xl font-bold text-yellow-600 mt-1 text-right">{{ $lateToday ?? 0 }}</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- On Leave -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-gray-100 text-gray-600 rounded-lg flex-shrink-0">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01">
-                        </path>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">On Leave</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-1 text-right">{{ $onLeaveToday ?? 0 }}</h3>
+        <a href="{{ route('leaves.index', ['tab' => 'history']) }}" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-gray-100 text-gray-600 rounded-lg flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">On Leave</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-1 text-right">{{ $onLeaveToday ?? 0 }}</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -91,7 +99,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-bold text-gray-800">Recruitment Growth</h3>
                 <select x-model="selectedYear" @change="window.location.href = '?year=' + selectedYear"
-                    class="text-xs text-gray-700 bg-gray-100 px-3 py-1.5 rounded border border-gray-200 focus:outline-none focus:border-green-500 cursor-pointer hover:bg-gray-200 transition">
+                    class="text-sm text-gray-700 bg-gray-100 px-4 py-2 pr-10 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 cursor-pointer hover:bg-gray-200 transition min-w-[120px]">
                     @for($year = date('Y'); $year >= date('Y') - 5; $year--)
                         <option value="{{ $year }}" {{ request('year', date('Y')) == $year ? 'selected' : '' }}>{{ $year }}
                         </option>

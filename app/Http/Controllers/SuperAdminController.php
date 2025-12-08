@@ -34,7 +34,7 @@ class SuperAdminController extends Controller
             ->with('employee.department')
             ->latest()
             ->get();
-        
+
         return view('superadmin.dashboard', compact('stats', 'hrPersonnel'));
     }
 
@@ -65,16 +65,15 @@ class SuperAdminController extends Controller
         }
 
         // 2. Generate Credentials
-        $initials = substr($request->first_name, 0, 1);
-        $baseUsername = strtolower($initials . $request->last_name);
-        $baseUsername = preg_replace('/[^a-z0-9]/', '', $baseUsername); 
+        $baseUsername = strtolower($request->first_name . '.' . $request->last_name);
+        $baseUsername = preg_replace('/[^a-z0-9.]/', '', $baseUsername); // Remove special chars except dot
         $username = $baseUsername;
         $counter = 1;
         while (User::where('username', $username)->exists()) {
             $username = $baseUsername . $counter++;
         }
 
-        $tempPassword = Str::random(10); 
+        $tempPassword = Str::random(10);
 
         do {
             $accessCode = str_pad(mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
@@ -112,9 +111,9 @@ class SuperAdminController extends Controller
             'joining_date' => $request->joining_date,
             'department_id' => $hrDept->id,      // AUTO-ASSIGNED
             'designation_id' => $hrDesig->id,    // AUTO-ASSIGNED
-            'basic_salary' => 0, 
+            'basic_salary' => 0,
             'status' => 'active',
-            'gender' => 'other', 
+            'gender' => 'other',
             'access_code' => $accessCode,
         ]);
 

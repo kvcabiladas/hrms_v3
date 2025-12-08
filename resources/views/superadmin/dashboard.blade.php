@@ -32,21 +32,14 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse($hrPersonnel as $hr)
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
-                                    {{ substr($hr->name, 0, 1) }}
-                                </div>
-                                <span class="font-medium text-gray-900">{{ $hr->name }}</span>
-                            </div>
+                        <td class="px-6 py-4 text-gray-900">
+                            {{ $hr->name }}
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 bg-gray-100 rounded text-xs font-mono font-bold text-gray-700">
-                                {{ $hr->employee->employee_id ?? 'N/A' }}
-                            </span>
+                        <td class="px-6 py-4 text-gray-900">
+                            {{ $hr->employee->employee_id ?? 'N/A' }}
                         </td>
-                        <td class="px-6 py-4">{{ $hr->employee->department->name ?? 'N/A' }}</td>
-                        <td class="px-6 py-4">{{ $hr->email }}</td>
+                        <td class="px-6 py-4 text-gray-900">{{ $hr->employee->department->name ?? 'N/A' }}</td>
+                        <td class="px-6 py-4 text-gray-900">{{ $hr->email }}</td>
                         
                         <!-- Action Column with Modal -->
                         <td class="px-6 py-4 text-center" x-data="{ showModal: false }">
@@ -98,7 +91,11 @@
                                                             <div class="flex justify-between items-center">
                                                                 @if($hr->temp_password)
                                                                     <div class="font-mono text-sm text-red-600 font-bold">{{ $hr->temp_password }}</div>
-                                                                    <button onclick="copyToClipboard('{{ $hr->temp_password }}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold focus:outline-none">COPY</button>
+                                                                    <button onclick="copyToClipboard('{{ $hr->temp_password }}')" class="text-gray-600 hover:text-green-600 transition focus:outline-none" title="Copy password">
+                                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                                                        </svg>
+                                                                    </button>
                                                                 @else
                                                                     <div class="font-mono text-sm text-green-600 italic">Changed by user</div>
                                                                 @endif
@@ -110,7 +107,11 @@
                                                             <span class="text-xs text-yellow-600 uppercase font-bold">Access Code</span>
                                                             <div class="flex justify-between items-center">
                                                                 <div class="font-mono text-lg font-bold text-yellow-800">{{ $hr->employee->access_code ?? 'N/A' }}</div>
-                                                                <button onclick="copyToClipboard('{{ $hr->employee->access_code }}')" class="text-yellow-700 hover:text-yellow-900 text-xs font-bold focus:outline-none">COPY</button>
+                                                                <button onclick="copyToClipboard('{{ $hr->employee->access_code }}')" class="text-gray-600 hover:text-green-600 transition focus:outline-none" title="Copy access code">
+                                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                                                    </svg>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>

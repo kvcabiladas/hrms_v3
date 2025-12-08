@@ -10,8 +10,30 @@ class Employee extends Model
 
     protected $casts = [
         'joining_date' => 'date',
-        'date_of_birth' => 'date',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When deleting an employee, also delete related records
+        static::deleting(function ($employee) {
+            // Delete related attendance records
+            $employee->attendance()->delete();
+
+            // Delete related leave records
+            $employee->leaves()->delete();
+
+            // Delete related documents
+            $employee->documents()->delete();
+
+            // Delete related onboarding tasks
+            $employee->onboardingTasks()->delete();
+
+            // Note: Payroll records are typically kept for historical/audit purposes
+            // so we don't delete them
+        });
+    }
 
     public function department()
     {

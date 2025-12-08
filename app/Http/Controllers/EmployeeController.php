@@ -29,12 +29,33 @@ class EmployeeController extends Controller
         }
 
         // Sort
-        $sort = $request->get('sort', 'created_at');
-        $direction = $request->get('direction', 'desc');
+        $sortBy = $request->get('sort', '');
 
-        // Allowed sort columns
-        if (in_array($sort, ['first_name', 'last_name', 'employee_id', 'created_at'])) {
-            $query->orderBy($sort, $direction);
+        switch ($sortBy) {
+            case 'name_asc':
+                $query->orderBy('first_name', 'asc')->orderBy('last_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('first_name', 'desc')->orderBy('last_name', 'desc');
+                break;
+            case 'id_asc':
+                $query->orderBy('employee_id', 'asc');
+                break;
+            case 'id_desc':
+                $query->orderBy('employee_id', 'desc');
+                break;
+            case 'department_asc':
+                $query->join('departments', 'employees.department_id', '=', 'departments.id')
+                    ->orderBy('departments.name', 'asc')
+                    ->select('employees.*');
+                break;
+            case 'department_desc':
+                $query->join('departments', 'employees.department_id', '=', 'departments.id')
+                    ->orderBy('departments.name', 'desc')
+                    ->select('employees.*');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
         }
 
         $employees = $query->paginate(15);
@@ -52,7 +73,7 @@ class EmployeeController extends Controller
     // I will include the show method here as it needs the Profile Banner update
     public function show(Employee $employee)
     {
-        $employee->load(['department', 'designation', 'attendance', 'leaves']);
+        $employee->load(['department', 'designation', 'attendance', 'leaves', 'user']);
         return view('employees.show', compact('employee'));
     }
 
@@ -72,53 +93,122 @@ class EmployeeController extends Controller
             'email' => 'required|email|unique:employees,email',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
-            'date_of_birth' => 'required|date',
             'gender' => 'required|in:Male,Female',
             'department_id' => 'required|exists:departments,id',
             'designation_id' => 'required|exists:designations,id',
             'joining_date' => 'required|date',
-            'basic_salary' => 'nullable|numeric|min:0',
+            'hr_access_code' => 'required|string|size:8',
         ]);
 
-        // Generate employee ID
-        $lastEmployee = Employee::latest('id')->first();
-        $nextId = $lastEmployee ? $lastEmployee->id + 1 : 1;
-        $validated['employee_id'] = 'EMP' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        // Verify HR access code
+        $hrUser = Auth::user();
+        if (!$hrUser->employee || $validated['hr_access_code'] !== $hrUser->employee->access_code) {
+            return back()->withErrors(['hr_access_code' => 'Invalid HR access code. Please enter your correct 8-digit access code.'])->withInput();
+        }
+
+        // Generate username (firstname.lastname format with uniqueness check)
+        $baseUsername = strtolower($validated['first_name'] . '.' . $validated['last_name']);
+        $baseUsername = preg_replace('/[^a-z0-9.]/', '', $baseUsername); // Remove special chars except dot
+        $username = $baseUsername;
+        $counter = 1;
+        while (User::where('username', $username)->exists()) {
+            $username = $baseUsername . $counter++;
+        }
+
+        // Generate temp password (10 characters for consistency)
+        $tempPassword = Str::random(10);
+
+        // Generate access code (8-digit numeric with uniqueness check)
+        do {
+            $accessCode = str_pad(mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+        } while (Employee::where('access_code', $accessCode)->exists());
+
+        // Generate employee ID (year-based format: EMP-2025-001)
+        $year = date('Y');
+        $lastEmp = Employee::where('employee_id', 'like', "EMP-$year-%")->latest('id')->first();
+        if ($lastEmp) {
+            $parts = explode('-', $lastEmp->employee_id);
+            $nextNum = intval(end($parts)) + 1;
+        } else {
+            $nextNum = 1;
+        }
+        $employeeId = "EMP-$year-" . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+
+        // Set employee data
+        $validated['employee_id'] = $employeeId;
+        $validated['access_code'] = $accessCode;
         $validated['status'] = 'active';
 
-        // Generate access code
-        $validated['access_code'] = strtoupper(Str::random(6));
+        // Remove hr_access_code from validated data before creating employee
+        unset($validated['hr_access_code']);
 
-        // Create employee
-        $employee = Employee::create($validated);
+        // Check if designation is "Payroll Manager" and assign appropriate role
+        $designation = Designation::find($validated['designation_id']);
+        $userRole = 'employee'; // Default role
 
-        // Create user account
-        $username = strtolower($validated['first_name'] . '.' . $validated['last_name']);
-        $tempPassword = Str::random(8);
+        if ($designation && $designation->name === 'Payroll Manager') {
+            $userRole = 'payroll_manager';
+        }
 
-        User::create([
+        // Create user account first
+        $user = User::create([
             'name' => $validated['first_name'] . ' ' . $validated['last_name'],
             'email' => $validated['email'],
             'username' => $username,
             'password' => Hash::make($tempPassword),
             'temp_password' => $tempPassword,
-            'role' => 'employee',
-            'employee_id' => $employee->id,
+            'role' => $userRole,
         ]);
+
+        // Link user to employee
+        $validated['user_id'] = $user->id;
+
+        // Create employee
+        $employee = Employee::create($validated);
 
         return redirect()->route('employees.index', ['tab' => 'employees'])->with('success', 'Employee created successfully!');
     }
 
     public function update(Request $request, Employee $employee)
     {
-        $validated = $request->validate([
-            'joining_date' => 'required|date',
-            'department_id' => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+        // Verify access code first
+        $request->validate([
+            'access_code' => 'required|string|size:8',
         ]);
 
-        $employee->update($validated);
+        // Check if access code matches
+        if ($request->access_code !== $employee->access_code) {
+            return back()->withErrors(['access_code' => 'Invalid access code. Please enter the correct 8-digit code.'])->withInput();
+        }
 
-        return redirect()->route('employees.show', $employee->id)->with('success', 'Employee information updated successfully!');
+        $action = $request->input('action', 'update');
+
+        if ($action === 'terminate') {
+            // Handle termination - DELETE the employee
+            $request->validate([
+                'termination_reason' => 'required|string|max:500',
+            ]);
+
+            // Delete associated user account first
+            if ($employee->user) {
+                $employee->user->delete();
+            }
+
+            // Delete the employee
+            $employee->delete();
+
+            return redirect()->route('employees.index', ['tab' => 'employees'])->with('success', 'Employee has been terminated and removed from the system.');
+        } else {
+            // Handle regular update
+            $validated = $request->validate([
+                'joining_date' => 'required|date',
+                'department_id' => 'required|exists:departments,id',
+                'designation_id' => 'required|exists:designations,id',
+            ]);
+
+            $employee->update($validated);
+
+            return redirect()->route('employees.show', $employee->id)->with('success', 'Employee information updated successfully!');
+        }
     }
 }

@@ -40,53 +40,71 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">First Name*</label>
                         <input type="text" name="first_name" value="{{ old('first_name') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            class="w-full px-4 py-2 border {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500">
+                        @error('first_name')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Last Name*</label>
                         <input type="text" name="last_name" value="{{ old('last_name') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            class="w-full px-4 py-2 border {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500">
+                        @error('last_name')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email*</label>
                         <input type="email" name="email" value="{{ old('email') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            class="w-full px-4 py-2 border {{ $errors->has('email') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500">
+                        @error('email')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Phone*</label>
                         <input type="text" name="phone" value="{{ old('phone') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
+                            class="w-full px-4 py-2 border {{ $errors->has('phone') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500"
                             placeholder="" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        @error('phone')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Address*</label>
                         <textarea name="address" required rows="3"
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 resize-none overflow-y-auto"
+                            class="w-full px-4 py-2 border {{ $errors->has('address') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500 resize-none overflow-y-auto"
                             placeholder="Enter complete address">{{ old('address') }}</textarea>
+                        @error('address')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2 pt-4">Job Details</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" x-data="{ 
-                                selectedDept: '', 
-                                positions: {{ json_encode($designations->map(function ($d) {
+                                            selectedDept: '', 
+                                            positions: {{ json_encode($designations->map(function ($d) {
         return ['id' => $d->id, 'name' => $d->name, 'department_id' => $d->department_id]; })) }}
-                            }">
+                                        }">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Department*</label>
                         <select name="department_id" x-model="selectedDept" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 bg-white">
+                            class="w-full px-4 py-2 border {{ $errors->has('department_id') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500 bg-white">
                             <option value="">Select Department</option>
                             @foreach($departments as $dept)
                                 <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                             @endforeach
                         </select>
+                        @error('department_id')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Position*</label>
                         <select name="designation_id" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 bg-white"
+                            class="w-full px-4 py-2 border {{ $errors->has('designation_id') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500 bg-white"
                             :disabled="!selectedDept">
                             <option value="">Select Position</option>
                             <template x-for="position in positions.filter(p => p.department_id == selectedDept)"
@@ -95,28 +113,31 @@
                             </template>
                         </select>
                         <p class="text-xs text-gray-500 mt-1" x-show="!selectedDept">Please select a department first</p>
+                        @error('designation_id')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Joining Date*</label>
                         <input type="date" name="joining_date" value="{{ old('joining_date') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
-                    </div>
+                            class="w-full px-4 py-2 border {{ $errors->has('joining_date') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500">
+                        @error('joining_date')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                        </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth*</label>
-                        <input type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Gender*</label>
-                        <select name="gender" required
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 bg-white">
-                            <option value="">Select Gender</option>
-                            <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
-                            <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
-                        </select>
+                        <div>
+                            <label class=" block text-sm font-medium text-gray-700 mb-2">Gender*</label>
+                            <select name="gender" required
+                                class="w-full px-4 py-2 border {{ $errors->has('gender') ? 'border-red-500' : 'border-gray-200' }} rounded-lg focus:outline-none focus:border-green-500 bg-white">
+                                <option value="">Select Gender</option>
+                                <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
+                                <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
+                            </select>
+                            @error('gender')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                     </div>
                 </div>
 
@@ -136,7 +157,7 @@
                                 Access Code to confirm creation</label>
                             <div class="relative">
                                 <input :type="showAccessCode ? 'text' : 'password'" name="hr_access_code" required
-                                    class="w-full px-4 py-2 pr-10 border-2 border-yellow-200 bg-white rounded-lg focus:outline-none focus:border-yellow-500 text-gray-800 tracking-widest font-mono placeholder-gray-300"
+                                    class="w-full px-4 py-2 pr-10 border-2 {{ $errors->has('hr_access_code') ? 'border-red-500' : 'border-yellow-200' }} bg-white rounded-lg focus:outline-none focus:border-yellow-500 text-gray-800 tracking-widest font-mono placeholder-gray-300"
                                     placeholder="XXXXXXXX" maxlength="8">
                                 <button type="button" @click="showAccessCode = !showAccessCode"
                                     class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none">
@@ -156,6 +177,9 @@
                                     </svg>
                                 </button>
                             </div>
+                            @error('hr_access_code')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div class="flex items-end">
                             <button type="submit"
