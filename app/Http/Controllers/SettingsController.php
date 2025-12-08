@@ -122,6 +122,7 @@ class SettingsController extends Controller
             'contacts.*.name' => 'required|string|max:255',
             'contacts.*.relationship' => 'required|string|max:100',
             'contacts.*.phone' => 'required|string|max:20',
+            'contacts.*.address' => 'required|string|max:500',
         ]);
 
         // Store as JSON in the employee table
@@ -130,5 +131,61 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('success', 'Emergency contacts updated successfully.');
+    }
+
+    // 5. Update Financial Details
+    public function updateFinancialDetails(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return back()->with('error', 'No employee profile found.');
+        }
+
+        $request->validate([
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+        ]);
+
+        $employee->update([
+            'bank_name' => $request->bank_name,
+            'account_number' => $request->account_number,
+        ]);
+
+        return back()->with('success', 'Financial details updated successfully.');
+    }
+
+    // 6. Update Profile Picture
+    public function updateProfilePicture(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return back()->with('error', 'No employee profile found.');
+        }
+
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // Delete old profile picture if exists
+        if ($employee->profile_picture && file_exists(public_path($employee->profile_picture))) {
+            unlink(public_path($employee->profile_picture));
+        }
+
+        // Store new profile picture
+        $file = $request->file('profile_picture');
+        $filename = 'profile_' . $employee->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('uploads/profiles'), $filename);
+
+        $employee->update([
+            'profile_picture' => 'uploads/profiles/' . $filename,
+        ]);
+
+        return back()->with('success', 'Profile picture updated successfully.');
     }
 }

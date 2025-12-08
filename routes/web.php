@@ -65,9 +65,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // --- FETCH STATS ---
         $today = now()->toDateString();
+        $selectedYear = request('year', date('Y'));
 
-        // Employee Counts
-        $totalEmployees = \App\Models\Employee::where('status', 'active')->count();
+        // Employee Counts - Count ALL users (employees, HR, accountants, super admins)
+        $totalEmployees = \App\Models\User::count();
 
         // Attendance Stats
         $presentToday = \App\Models\Attendance::whereDate('date', $today)->count();
@@ -88,9 +89,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->take(5)
             ->get();
 
-        // Recruitment Growth Chart (Use joining_date, not created_at)
+        // Recruitment Growth Chart (Use joining_date, not created_at) - Support year parameter
         $employeesPerMonth = \App\Models\Employee::selectRaw('MONTH(joining_date) as month, COUNT(*) as count')
-            ->whereYear('joining_date', date('Y'))
+            ->whereYear('joining_date', $selectedYear)
             ->whereNotNull('joining_date')
             ->groupBy('month')
             ->pluck('count', 'month')
@@ -187,6 +188,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/update-profile', [SettingsController::class, 'updateProfile'])->name('update_profile');
         Route::put('/update-password', [SettingsController::class, 'updatePassword'])->name('update_password');
         Route::post('/emergency-contacts', [SettingsController::class, 'updateEmergencyContacts'])->name('update_emergency_contacts');
+        Route::post('/financial-details', [SettingsController::class, 'updateFinancialDetails'])->name('update_financial_details');
+        Route::post('/profile-picture', [SettingsController::class, 'updateProfilePicture'])->name('update_profile_picture');
     });
 
     // =========================================================================

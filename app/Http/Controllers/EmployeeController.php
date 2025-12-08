@@ -73,11 +73,11 @@ class EmployeeController extends Controller
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
             'date_of_birth' => 'required|date',
-            'gender' => 'required|in:Male,Female,Other',
+            'gender' => 'required|in:Male,Female',
             'department_id' => 'required|exists:departments,id',
             'designation_id' => 'required|exists:designations,id',
             'joining_date' => 'required|date',
-            'basic_salary' => 'required|numeric|min:0',
+            'basic_salary' => 'nullable|numeric|min:0',
         ]);
 
         // Generate employee ID
@@ -106,6 +106,19 @@ class EmployeeController extends Controller
             'employee_id' => $employee->id,
         ]);
 
-        return redirect()->route('employees.index')->with('success', 'Employee created successfully!');
+        return redirect()->route('employees.index', ['tab' => 'employees'])->with('success', 'Employee created successfully!');
+    }
+
+    public function update(Request $request, Employee $employee)
+    {
+        $validated = $request->validate([
+            'joining_date' => 'required|date',
+            'department_id' => 'required|exists:departments,id',
+            'designation_id' => 'required|exists:designations,id',
+        ]);
+
+        $employee->update($validated);
+
+        return redirect()->route('employees.show', $employee->id)->with('success', 'Employee information updated successfully!');
     }
 }

@@ -4,15 +4,22 @@
 
 @section('content')
     <div x-data="{ 
-        activeTab: 'employees', 
-        searchQuery: '',
-        showAddDept: false,
-        showEditDept: false,
-        showAddJob: false,
-        showEditJob: false,
-        selectedDept: null,
-        selectedJob: null
-    }">
+                    activeTab: new URLSearchParams(window.location.search).get('tab') || 'employees', 
+                    searchQuery: '',
+                    showAddDept: false,
+                    showEditDept: false,
+                    showAddJob: false,
+                    showEditJob: false,
+                    selectedDept: null,
+                    selectedJob: null
+                }" x-init="
+                    // Update URL when tab changes
+                    $watch('activeTab', value => {
+                        const url = new URL(window.location);
+                        url.searchParams.set('tab', value);
+                        window.history.pushState({}, '', url);
+                    })
+                ">
         <!-- Tab Navigation -->
         <div class="mb-6 border-b border-gray-200">
             <nav class="flex space-x-8">
@@ -70,51 +77,40 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($employees as $employee)
+                        <template x-for="employee in {{ json_encode($employees->items()) }}.filter(e => 
+                                e.first_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                e.last_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                e.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
+                            )" :key="employee.id">
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-mono text-xs text-gray-600">{{ $employee->employee_id }}</td>
-                                <td class="px-6 py-4 font-medium text-gray-900">{{ $employee->first_name }}
-                                    {{ $employee->last_name }}</td>
-                                <td class="px-6 py-4 text-gray-600">{{ $employee->email }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-gray-600" x-text="employee.employee_id"></td>
+                                <td class="px-6 py-4 font-medium text-gray-900"
+                                    x-text="employee.first_name + ' ' + employee.last_name"></td>
+                                <td class="px-6 py-4 text-gray-600" x-text="employee.email"></td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                                        {{ $employee->department->name ?? 'N/A' }}
-                                    </span>
+                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                                        x-text="employee.department?.name || 'N/A'"></span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
-                                        {{ $employee->designation->name ?? 'N/A' }}
-                                    </span>
+                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium"
+                                        x-text="employee.designation?.name || 'N/A'"></span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <div class="flex justify-center gap-3">
-                                        <a href="{{ route('employees.show', $employee->id) }}"
-                                            class="text-blue-600 hover:text-blue-800 text-xs font-medium transition">View</a>
-                                        <a href="{{ route('employees.edit', $employee->id) }}"
-                                            class="text-green-600 hover:text-green-800 text-xs font-medium transition">Edit</a>
-                                        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST"
-                                            class="inline">
-                                            @csrf @method('DELETE')
-                                            <button type="submit"
-                                                onclick="return confirm('Are you sure you want to delete this employee?')"
-                                                class="text-red-600 hover:text-red-800 text-xs font-medium transition">Delete</button>
-                                        </form>
-                                    </div>
+                                    <a :href="`/employees/${employee.id}`"
+                                        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs font-medium transition">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                            </path>
+                                        </svg>
+                                        View
+                                    </a>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z">
-                                        </path>
-                                    </svg>
-                                    <p class="text-sm">No employees found</p>
-                                </td>
-                            </tr>
-                        @endforelse
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -129,21 +125,133 @@
 
         <!-- Tab 2: Employee Attendance -->
         <div x-show="activeTab === 'attendance'" style="display: none;">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Employee Attendance Overview</h3>
-                <p class="text-gray-600 text-sm">Attendance tracking and analytics will be displayed here.</p>
-                <p class="text-gray-500 text-xs mt-2">Note: Copy content from hr/attendance.blade.php for full functionality
-                </p>
+            <!-- Date Range Filter -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <form method="GET" action="{{ route('employees.index') }}" class="flex flex-wrap gap-4 items-end">
+                    <input type="hidden" name="tab" value="attendance">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                        <input type="date" name="start_date"
+                            value="{{ request('start_date', now()->startOfMonth()->format('Y-m-d')) }}"
+                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                    </div>
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                        <input type="date" name="end_date" value="{{ request('end_date', now()->format('Y-m-d')) }}"
+                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                    </div>
+                    <button type="submit"
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition">
+                        Filter
+                    </button>
+                </form>
+            </div>
+
+            <!-- Attendance Records Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="font-bold text-lg text-gray-800">All Attendance Records</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
+                            <tr>
+                                <th class="px-6 py-4">Employee</th>
+                                <th class="px-6 py-4">Department</th>
+                                <th class="px-6 py-4">Date</th>
+                                <th class="px-6 py-4">Clock In</th>
+                                <th class="px-6 py-4">Clock Out</th>
+                                <th class="px-6 py-4">Duration</th>
+                                <th class="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @php
+                                $startDate = request('start_date', now()->startOfMonth()->format('Y-m-d'));
+                                $endDate = request('end_date', now()->format('Y-m-d'));
+                                $attendanceRecords = \App\Models\Attendance::with(['employee.department'])
+                                    ->whereBetween('date', [$startDate, $endDate])
+                                    ->orderBy('date', 'desc')
+                                    ->paginate(20);
+                            @endphp
+                            @forelse($attendanceRecords as $record)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 font-medium text-gray-900">
+                                        {{ $record->employee->first_name }} {{ $record->employee->last_name }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                                            {{ $record->employee->department->name ?? 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">{{ $record->date->format('M d, Y') }}</td>
+                                    <td class="px-6 py-4 font-mono text-green-600">
+                                        {{ \Carbon\Carbon::parse($record->clock_in)->format('H:i') }}
+                                    </td>
+                                    <td class="px-6 py-4 font-mono text-red-500">
+                                        {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '--:--' }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        @if($record->total_hours)
+                                            <span class="font-bold text-gray-800">{{ $record->total_hours }}</span> hrs
+                                        @else
+                                            <span class="text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span
+                                            class="px-2.5 py-1 rounded-full text-xs font-medium 
+                                                        {{ $record->status === 'present' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                            {{ ucfirst($record->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                        <p class="text-sm">No attendance records found for this period.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                @if($attendanceRecords->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                        {{ $attendanceRecords->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 
-        
+
 
         <!-- Tab 3: Departments -->
         <div x-show="activeTab === 'departments'" style="display: none;">
-            <div class="mb-6">
+            <!-- Search and Add Button -->
+            <div class="mb-6 flex justify-between items-center">
+                <div class="flex gap-4 flex-1">
+                    <div class="flex-1 max-w-md">
+                        <input type="text" placeholder="Search departments..." x-model="searchQuery"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                    </div>
+                    <select
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                        <option value="">Sort By</option>
+                        <option value="name_asc">Name (A-Z)</option>
+                        <option value="name_desc">Name (Z-A)</option>
+                        <option value="employees_desc">Most Employees</option>
+                        <option value="employees_asc">Least Employees</option>
+                    </select>
+                </div>
                 <button @click="showAddDept = true"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
+                    class="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
@@ -161,18 +269,19 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($departments as $dept)
+                        <template
+                            x-for="dept in {{ json_encode($departments) }}.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))"
+                            :key="dept.id">
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-medium text-gray-900">{{ $dept->name }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900" x-text="dept.name"></td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold">
-                                        {{ $dept->employees_count ?? 0 }} employees
-                                    </span>
+                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold"
+                                        x-text="(dept.employees_count || 0) + ' employees'"></span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button @click="selectedDept = {{ json_encode($dept) }}; showEditDept = true"
+                                    <button @click="selectedDept = dept; showEditDept = true"
                                         class="text-green-600 hover:text-green-800 text-xs font-medium mr-3 transition">Edit</button>
-                                    <form action="{{ route('departments.destroy', $dept->id) }}" method="POST" class="inline">
+                                    <form :action="`/departments/${dept.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this department? All associated jobs will be deleted and employees will be set to N/A.')"
@@ -180,13 +289,7 @@
                                     </form>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="px-6 py-12 text-center text-gray-500">
-                                    <p class="text-sm">No departments found</p>
-                                </td>
-                            </tr>
-                        @endforelse
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -259,9 +362,25 @@
 
         <!-- Tab 4: Jobs -->
         <div x-show="activeTab === 'jobs'" style="display: none;">
-            <div class="mb-6">
+            <!-- Search and Add Button -->
+            <div class="mb-6 flex justify-between items-center">
+                <div class="flex gap-4 flex-1">
+                    <div class="flex-1 max-w-md">
+                        <input type="text" placeholder="Search jobs..." x-model="searchQuery"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                    </div>
+                    <select
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                        <option value="">Sort By</option>
+                        <option value="name_asc">Job Title (A-Z)</option>
+                        <option value="name_desc">Job Title (Z-A)</option>
+                        <option value="department_asc">Department (A-Z)</option>
+                        <option value="employees_desc">Most Employees</option>
+                        <option value="employees_asc">Least Employees</option>
+                    </select>
+                </div>
                 <button @click="showAddJob = true"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
+                    class="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
@@ -280,23 +399,23 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse($designations as $job)
+                        <template
+                            x-for="job in {{ json_encode($designations) }}.filter(j => j.name.toLowerCase().includes(searchQuery.toLowerCase()))"
+                            :key="job.id">
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-medium text-gray-900">{{ $job->name }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900" x-text="job.name"></td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                                        {{ $job->department->name ?? 'N/A' }}
-                                    </span>
+                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                                        x-text="job.department?.name || 'N/A'"></span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-bold">
-                                        {{ $job->employees_count ?? 0 }} employees
-                                    </span>
+                                    <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-bold"
+                                        x-text="(job.employees_count || 0) + ' employees'"></span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button @click="selectedJob = {{ json_encode($job) }}; showEditJob = true"
+                                    <button @click="selectedJob = job; showEditJob = true"
                                         class="text-green-600 hover:text-green-800 text-xs font-medium mr-3 transition">Edit</button>
-                                    <form action="{{ route('designations.destroy', $job->id) }}" method="POST" class="inline">
+                                    <form :action="`/designations/${job.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this job? Employees with this job will be set to N/A.')"
@@ -304,13 +423,7 @@
                                     </form>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-6 py-12 text-center text-gray-500">
-                                    <p class="text-sm">No jobs found</p>
-                                </td>
-                            </tr>
-                        @endforelse
+                        </template>
                     </tbody>
                 </table>
             </div>

@@ -18,7 +18,7 @@ class DepartmentController extends Controller
 
         Department::create($validated);
 
-        return back()->with('success', 'Department created successfully!');
+        return redirect()->route('employees.index', ['tab' => 'departments'])->with('success', 'Department created successfully!');
     }
 
     /**
@@ -32,7 +32,7 @@ class DepartmentController extends Controller
 
         $department->update($validated);
 
-        return back()->with('success', 'Department updated successfully!');
+        return redirect()->route('employees.index', ['tab' => 'departments'])->with('success', 'Department updated successfully!');
     }
 
     /**
@@ -48,6 +48,6 @@ class DepartmentController extends Controller
 
         $department->delete();
 
-        return back()->with('success', 'Department deleted successfully!');
+        return redirect()->route('employees.index', ['tab' => 'departments'])->with('success', 'Department deleted successfully!');
     }
 }

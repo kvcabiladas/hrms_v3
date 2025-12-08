@@ -8,7 +8,7 @@
         <div>
             <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
             <p class="text-sm text-gray-500 mt-1">
-                {{ now()->format('l, F j, Y • g:i A') }}
+                {{ now()->format('l, F j, Y • H:i') }}
             </p>
         </div>
     </div>
@@ -86,10 +86,17 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         <!-- 2. GROWTH CHART (Left Side - 2/3 Width) -->
-        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            x-data="{ selectedYear: {{ date('Y') }} }">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-bold text-gray-800">Recruitment Growth</h3>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ date('Y') }}</span>
+                <select x-model="selectedYear" @change="window.location.href = '?year=' + selectedYear"
+                    class="text-xs text-gray-700 bg-gray-100 px-3 py-1.5 rounded border border-gray-200 focus:outline-none focus:border-green-500 cursor-pointer hover:bg-gray-200 transition">
+                    @for($year = date('Y'); $year >= date('Y') - 5; $year--)
+                        <option value="{{ $year }}" {{ request('year', date('Y')) == $year ? 'selected' : '' }}>{{ $year }}
+                        </option>
+                    @endfor
+                </select>
             </div>
             <div class="relative h-72 w-full">
                 <!-- Data Container: Stores PHP data in HTML attributes to avoid JS syntax errors -->
@@ -102,7 +109,7 @@
         <!-- 3. ACTION REQUIRED (Right Side - 1/3 Width) -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-800">Pending Requests</h3>
+                <h3 class="font-bold text-gray-800">Pending Leave Requests</h3>
                 <span
                     class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">{{ $pendingLeavesCount }}</span>
             </div>
@@ -114,10 +121,10 @@
                             <div class="flex justify-between items-center">
                                 <div class="flex-1">
                                     <p class="text-sm font-bold text-gray-800">{{ $leave->employee->first_name }}
-                                        {{ $leave->employee->last_name }}</p>
-                                    <p class="text-xs text-gray-500 mt-1">{{ $leave->type }}</p>
+                                        {{ $leave->employee->last_name }}
+                                    </p>
                                 </div>
-                                <a href="{{ route('leaves.show', $leave->id) }}"
+                                <a href="{{ route('leaves.index') }}"
                                     class="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition">
                                     View
                                 </a>

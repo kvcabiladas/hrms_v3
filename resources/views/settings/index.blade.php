@@ -1,6 +1,6 @@
 @extends('layouts.hrms')
 
-@section('title', 'Account Settings')
+@section('title', 'Settings')
 
 @section('content')
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6" x-data="{ activeTab: 'profile' }">
@@ -16,18 +16,18 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                         </svg>
-                        My Profile
+                        Personal Information
                     </button>
 
-                    <button @click="activeTab = 'security'"
-                        :class="activeTab === 'security' ? 'bg-green-50 text-green-700 border-l-4 border-green-600' : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'"
+                    <button @click="activeTab = 'financial'"
+                        :class="activeTab === 'financial' ? 'bg-green-50 text-green-700 border-l-4 border-green-600' : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'"
                         class="text-left px-4 py-3 font-medium text-sm transition flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
                             </path>
                         </svg>
-                        Security & Password
+                        Financial Details
                     </button>
 
                     <button @click="activeTab = 'emergency'"
@@ -41,15 +41,15 @@
                         Emergency Contacts
                     </button>
 
-                    <!-- Recommended Extra Options -->
-                    <button disabled
-                        class="text-left px-4 py-3 font-medium text-sm text-gray-400 cursor-not-allowed flex items-center gap-3">
+                    <button @click="activeTab = 'security'"
+                        :class="activeTab === 'security' ? 'bg-green-50 text-green-700 border-l-4 border-green-600' : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'"
+                        class="text-left px-4 py-3 font-medium text-sm transition flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
                             </path>
                         </svg>
-                        Notifications (Coming Soon)
+                        Security & Password
                     </button>
 
                     @if(Auth::user()->role === 'super_admin')
@@ -72,35 +72,106 @@
         <!-- Main Content Area -->
         <div class="lg:col-span-3">
 
-            <!-- TAB 1: PROFILE -->
-            <div x-show="activeTab === 'profile'" class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-6">Personal Information</h2>
-                <form action="{{ route('settings.update_profile') }}" method="POST">
+            <!-- TAB 1: PERSONAL INFORMATION (View/Edit Mode) -->
+            <div x-show="activeTab === 'profile'" class="bg-white rounded-xl shadow-sm border border-gray-100 p-8"
+                x-data="{ editMode: false }">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Personal Information</h2>
+                    <button @click="editMode = !editMode" type="button"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        <span x-text="editMode ? 'Cancel' : 'Edit'"></span>
+                    </button>
+                </div>
+
+                <!-- Profile Picture Section -->
+                <div class="mb-8 flex items-center gap-6">
+                    <div class="relative">
+                        @if($employee && $employee->profile_picture)
+                            <img src="{{ asset($employee->profile_picture) }}" alt="Profile"
+                                class="w-24 h-24 rounded-full object-cover border-4 border-gray-100">
+                        @else
+                            <div
+                                class="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-3xl font-bold">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                        @endif
+                    </div>
+                    <div x-show="editMode" style="display: none;">
+                        <form action="{{ route('settings.update_profile_picture') }}" method="POST"
+                            enctype="multipart/form-data" class="flex items-center gap-3">
+                            @csrf
+                            <input type="file" name="profile_picture" accept="image/*" required
+                                class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                            <button type="submit"
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                                Upload
+                            </button>
+                        </form>
+                        <p class="text-xs text-gray-500 mt-2">JPG, PNG or GIF (MAX. 2MB)</p>
+                    </div>
+                </div>
+
+                <!-- View Mode -->
+                <div x-show="!editMode">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->first_name ?? 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->last_name ?? 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
+                            <p class="text-gray-900 font-medium">{{ $user->email }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Phone Number</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->phone ?? 'N/A' }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->address ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode -->
+                <form x-show="editMode" style="display: none;" action="{{ route('settings.update_profile') }}"
+                    method="POST">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                            <input type="text" name="first_name" value="{{ $employee->first_name ?? '' }}"
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name*</label>
+                            <input type="text" name="first_name" value="{{ $employee->first_name ?? '' }}" required
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                            <input type="text" name="last_name" value="{{ $employee->last_name ?? '' }}"
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name*</label>
+                            <input type="text" name="last_name" value="{{ $employee->last_name ?? '' }}" required
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                            <input type="email" name="email" value="{{ $user->email }}"
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address*</label>
+                            <input type="email" name="email" value="{{ $user->email }}" required
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                            <input type="text" name="phone" value="{{ $employee->phone ?? '' }}"
-                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number*</label>
+                            <input type="text" name="phone" value="{{ $employee->phone ?? '' }}" required
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
+                                placeholder="Numbers only">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                            <textarea name="address" rows="3"
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Address*</label>
+                            <textarea name="address" rows="3" required
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">{{ $employee->address ?? '' }}</textarea>
                         </div>
                     </div>
@@ -112,7 +183,169 @@
                 </form>
             </div>
 
-            <!-- TAB 2: SECURITY (With Eye Icons) -->
+            <!-- TAB 2: FINANCIAL DETAILS (View/Edit Mode) -->
+            <div x-show="activeTab === 'financial'" style="display: none;"
+                class="bg-white rounded-xl shadow-sm border border-gray-100 p-8" x-data="{ editMode: false }">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Financial Details</h2>
+                    <button @click="editMode = !editMode" type="button"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        <span x-text="editMode ? 'Cancel' : 'Edit'"></span>
+                    </button>
+                </div>
+
+                <!-- View Mode -->
+                <div x-show="!editMode">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Bank Name</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->bank_name ?? 'Not set' }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Account Number</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->account_number ?? 'Not set' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode -->
+                <form x-show="editMode" style="display: none;" action="{{ route('settings.update_financial_details') }}"
+                    method="POST">
+                    @csrf
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                            <input type="text" name="bank_name" value="{{ $employee->bank_name ?? '' }}"
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                            <input type="text" name="account_number" value="{{ $employee->account_number ?? '' }}"
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit"
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save
+                            Changes</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 3: EMERGENCY CONTACTS (View/Edit Mode) -->
+            <div x-show="activeTab === 'emergency'" style="display: none;"
+                class="bg-white rounded-xl shadow-sm border border-gray-100 p-8" x-data="{ 
+                        editMode: false,
+                        contacts: {{ json_encode($emergencyContacts ?? [['name' => '', 'relationship' => '', 'phone' => '', 'address' => '']]) }}
+                    }">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Emergency Contacts</h2>
+                    <button @click="editMode = !editMode" type="button"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        <span x-text="editMode ? 'Cancel' : 'Edit'"></span>
+                    </button>
+                </div>
+
+                <!-- View Mode -->
+                <div x-show="!editMode">
+                    <template x-for="(contact, index) in contacts" :key="index">
+                        <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Contact Name</label>
+                                    <p class="text-gray-900 font-medium" x-text="contact.name || 'N/A'"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Relationship</label>
+                                    <p class="text-gray-900 font-medium" x-text="contact.relationship || 'N/A'"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Phone Number</label>
+                                    <p class="text-gray-900 font-medium" x-text="contact.phone || 'N/A'"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                                    <p class="text-gray-900 font-medium" x-text="contact.address || 'N/A'"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Edit Mode -->
+                <form x-show="editMode" style="display: none;" action="{{ route('settings.update_emergency_contacts') }}"
+                    method="POST">
+                    @csrf
+                    <div class="space-y-6">
+                        <template x-for="(contact, index) in contacts" :key="index">
+                            <div class="border border-gray-200 rounded-lg p-4 relative">
+                                <button type="button" @click="contacts.splice(index, 1)" x-show="contacts.length > 1"
+                                    class="absolute top-2 right-2 text-red-500 hover:text-red-700">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact Name*</label>
+                                        <input type="text" :name="'contacts[' + index + '][name]'" x-model="contact.name"
+                                            required
+                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Relationship*</label>
+                                        <input type="text" :name="'contacts[' + index + '][relationship]'"
+                                            x-model="contact.relationship" required
+                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
+                                            placeholder="e.g., Spouse, Parent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number*</label>
+                                        <input type="text" :name="'contacts[' + index + '][phone]'" x-model="contact.phone"
+                                            required oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
+                                            placeholder="Numbers only">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Address*</label>
+                                        <input type="text" :name="'contacts[' + index + '][address]'"
+                                            x-model="contact.address" required
+                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <button type="button" @click="contacts.push({ name: '', relationship: '', phone: '', address: '' })"
+                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                                </path>
+                            </svg>
+                            Add Another Contact
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save
+                            Emergency Contacts</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 4: SECURITY (Password Change) -->
             <div x-show="activeTab === 'security'" style="display: none;"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <h2 class="text-xl font-bold text-gray-800 mb-6">Change Password</h2>
@@ -211,71 +444,7 @@
                 </form>
             </div>
 
-            <!-- TAB 3: EMERGENCY CONTACTS -->
-            <div x-show="activeTab === 'emergency'" style="display: none;"
-                class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-6">Emergency Contacts</h2>
-                <p class="text-sm text-gray-500 mb-6">Add people to contact in case of emergency. This information will be
-                    kept confidential.</p>
-
-                <form action="{{ route('settings.update_emergency_contacts') }}" method="POST"
-                    x-data="{ contacts: {{ json_encode($emergencyContacts ?? [['name' => '', 'relationship' => '', 'phone' => '']]) }} }">
-                    @csrf
-
-                    <div class="space-y-6">
-                        <template x-for="(contact, index) in contacts" :key="index">
-                            <div class="border border-gray-200 rounded-lg p-4 relative">
-                                <button type="button" @click="contacts.splice(index, 1)" x-show="contacts.length > 1"
-                                    class="absolute top-2 right-2 text-red-500 hover:text-red-700">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
-                                        <input type="text" :name="'contacts[' + index + '][name]'" x-model="contact.name"
-                                            required
-                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
-                                        <input type="text" :name="'contacts[' + index + '][relationship]'"
-                                            x-model="contact.relationship" required
-                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
-                                            placeholder="e.g., Spouse, Parent">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                                        <input type="tel" :name="'contacts[' + index + '][phone]'" x-model="contact.phone"
-                                            required
-                                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
-                                            placeholder="+63">
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="mt-6 flex justify-between items-center">
-                        <button type="button" @click="contacts.push({ name: '', relationship: '', phone: '' })"
-                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-                                </path>
-                            </svg>
-                            Add Another Contact
-                        </button>
-                        <button type="submit"
-                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save
-                            Emergency Contacts</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TAB 4: COMPANY (Super Admin Only) -->
+            <!-- TAB 5: COMPANY (Super Admin Only) -->
             @if(Auth::user()->role === 'super_admin')
                 <div x-show="activeTab === 'company'" style="display: none;"
                     class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
@@ -283,19 +452,27 @@
                     <form action="{{ route('settings.update_company') }}" method="POST">
                         @csrf
                         <div class="space-y-4">
-                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label><input
-                                    type="text" name="name" value="{{ $company->name ?? '' }}"
-                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg"></div>
-                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Contact Email</label><input
-                                    type="email" name="email" value="{{ $company->email ?? '' }}"
-                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg"></div>
-                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Website</label><input type="url"
-                                    name="website" value="{{ $company->website ?? '' }}"
-                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg"></div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                                <input type="text" name="name" value="{{ $company->name ?? '' }}"
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                                <input type="email" name="email" value="{{ $company->email ?? '' }}"
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                                <input type="url" name="website" value="{{ $company->website ?? '' }}"
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
+                            </div>
                         </div>
-                        <div class="mt-6"><button type="submit"
+                        <div class="mt-6">
+                            <button type="submit"
                                 class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">Save
-                                Company Info</button></div>
+                                Company Info</button>
+                        </div>
                     </form>
                 </div>
             @endif

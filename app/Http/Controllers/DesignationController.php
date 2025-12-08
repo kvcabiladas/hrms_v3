@@ -19,7 +19,7 @@ class DesignationController extends Controller
 
         Designation::create($validated);
 
-        return back()->with('success', 'Job created successfully!');
+        return redirect()->route('employees.index', ['tab' => 'jobs'])->with('success', 'Job created successfully!');
     }
 
     /**
@@ -34,7 +34,7 @@ class DesignationController extends Controller
 
         $designation->update($validated);
 
-        return back()->with('success', 'Job updated successfully!');
+        return redirect()->route('employees.index', ['tab' => 'jobs'])->with('success', 'Job updated successfully!');
     }
 
     /**
@@ -47,6 +47,6 @@ class DesignationController extends Controller
 
         $designation->delete();
 
-        return back()->with('success', 'Job deleted successfully!');
+        return redirect()->route('employees.index', ['tab' => 'jobs'])->with('success', 'Job deleted successfully!');
     }
 }

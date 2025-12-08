@@ -16,7 +16,7 @@
     </div>
 
     <!-- Banner Profile Header -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8 relative">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8 relative" x-data="{ showEditModal: false }">
         <!-- Green Background Banner -->
         <div class="h-32 bg-gradient-to-r from-green-600 to-green-500"></div>
 
@@ -31,7 +31,17 @@
                 </div>
             </div>
 
-            <div class="mt-14 text-center">
+            <div class="mt-14 text-center relative">
+                <!-- Edit Icon Button -->
+                @if(Auth::user()->role === 'hr' || Auth::user()->role === 'super_admin')
+                    <button @click="showEditModal = true" 
+                        class="absolute top-0 right-0 p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </button>
+                @endif
+                
                 <h2 class="text-2xl font-bold text-gray-900">{{ $employee->first_name }} {{ $employee->last_name }}</h2>
                 <p class="text-green-600 font-medium">{{ $employee->designation->name ?? 'No Designation' }}</p>
                 <div class="flex flex-wrap justify-center gap-4 mt-3 text-sm text-gray-600">
@@ -67,6 +77,65 @@
                         </svg>
                         {{ $employee->phone }}
                     </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Edit Employee Information</h3>
+
+                    <form action="{{ route('employees.update', $employee->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Joining Date</label>
+                                <input type="date" name="joining_date" value="{{ $employee->joining_date->format('Y-m-d') }}" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                                <select name="department_id" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                                    @foreach(\App\Models\Department::all() as $dept)
+                                        <option value="{{ $dept->id }}" {{ $employee->department_id == $dept->id ? 'selected' : '' }}>
+                                            {{ $dept->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                                <select name="designation_id" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                                    @foreach(\App\Models\Designation::all() as $desig)
+                                        <option value="{{ $desig->id }}" {{ $employee->designation_id == $desig->id ? 'selected' : '' }}>
+                                            {{ $desig->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 mt-6">
+                            <button type="submit"
+                                class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium transition">
+                                Save Changes
+                            </button>
+                            <button type="button" @click="showEditModal = false"
+                                class="px-6 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-medium transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -156,9 +225,9 @@
                             class="font-mono text-sm bg-gray-50 px-3 py-1 rounded">{{ $employee->user->username ?? 'N/A' }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500">Password Status</span>
+                        <span class="text-sm text-gray-500">Password</span>
                         @if($employee->user->temp_password)
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded font-bold">Temp:
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded font-bold">
                                 {{ $employee->user->temp_password }}</span>
                         @else
                             <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded font-bold">Secure (Changed)</span>
