@@ -48,7 +48,7 @@
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">ID</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Department</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Designation</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Basic Salary</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Hourly Rate</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Payrolls</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Actions</th>
                         </tr>
@@ -75,7 +75,7 @@
                                 <td class="px-6 py-4 text-gray-900">{{ $employee->designation->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4">
                                     <span
-                                        class="font-bold text-green-600">₱{{ number_format($employee->basic_salary ?? 0, 2) }}</span>
+                                        class="font-bold text-green-600">₱{{ number_format($employee->hourly_rate ?? 0, 2) }}/hr</span>
                                 </td>
                                 <td class="px-6 py-4 text-gray-900">{{ $employee->payrolls->count() }}</td>
                                 <td class="px-6 py-4">

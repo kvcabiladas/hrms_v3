@@ -5,72 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Leave;
 use App\Models\LeaveType;
 use App\Models\Employee;
+use App\Models\EmployeeLeaveBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Helpers\NotificationHelper;
 
 class LeaveController extends Controller
 {
-    // ... (Keep index, settings, storeType, create, store methods AS IS) ...
-    // Just copy-paste the previous versions of those methods if you overwrote them.
-    // Below is the FIXED update method:
-
-    public function update(Request $request, Leave $leave)
-    {
-        // 1. RECALL LOGIC
-        if ($request->has('recall')) {
-            $request->validate([
-                'recalled_date' => 'required|date',
-            ]);
-
-            $leave->update([
-                'status' => 'recalled',
-                'recalled_date' => $request->recalled_date,
-            ]);
-
-            // Send notification
-            NotificationHelper::leaveRecalled($leave);
-
-            return redirect()->route('leaves.index', ['tab' => 'history'])->with('success', 'Employee has been recalled from leave.');
-        }
-
-        // 2. APPROVE / REJECT LOGIC
-        $request->validate([
-            'status' => 'required|in:approved,rejected',
-        ]);
-
-        $updateData = ['status' => $request->status];
-
-        // If rejecting, save the rejection reason
-        if ($request->status === 'rejected' && $request->has('rejection_reason')) {
-            $updateData['rejection_reason'] = $request->rejection_reason;
-        }
-
-        $leave->update($updateData);
-
-        // Send notification based on status
-        if ($request->status === 'approved') {
-            NotificationHelper::leaveApproved($leave);
-        } elseif ($request->status === 'rejected') {
-            NotificationHelper::leaveRejected($leave);
-        }
-
-        return redirect()->route('leaves.index', ['tab' => 'history'])->with('success', 'Leave request has been ' . $request->status . '.');
-    }
-
     /**
-     * Display the specified leave request
+     * Display leave management page
      */
-    public function show(Leave $leave)
-    {
-        $leave->load(['employee.department', 'type', 'reliefOfficer']);
-        return view('leaves.show', compact('leave'));
-    }
-
-    // ... (Keep index, settings, etc from previous responses) ...
-
-    // RE-INCLUDING OTHER METHODS HERE JUST IN CASE YOU NEED THE FULL FILE:
     public function index()
     {
         $user = Auth::user();
@@ -80,7 +26,8 @@ class LeaveController extends Controller
             $query->where('employee_id', $user->employee->id);
         }
 
-        $leaves = $query->paginate(10);
+        // Get all leaves for display
+        $leaves = $query->get();
 
         $stats = [
             'pending' => Leave::where('status', 'pending')->count(),
@@ -92,84 +39,38 @@ class LeaveController extends Controller
         ];
 
         $reliefOfficers = Employee::where('status', 'active')->get();
-
-        return view('leaves.index', compact('leaves', 'stats', 'reliefOfficers'));
-    }
-
-    public function settings()
-    {
-        if (Auth::user()->role === 'employee')
-            abort(403);
         $types = LeaveType::all();
-        return view('leaves.settings', compact('types'));
+
+        return view('leaves.index', compact('leaves', 'stats', 'reliefOfficers', 'types'));
     }
 
-    public function storeType(Request $request)
-    {
-        if (Auth::user()->role === 'employee')
-            abort(403);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'days_allowed' => 'required|integer|min:1',
-            'is_recallable' => 'nullable|boolean',
-        ]);
-
-        LeaveType::create([
-            'name' => $request->name,
-            'days_allowed' => $request->days_allowed,
-            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
-        ]);
-
-        return back()->with('success', 'Leave type created successfully.');
-    }
-
-    public function updateType(Request $request, LeaveType $type)
-    {
-        if (Auth::user()->role === 'employee')
-            abort(403);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'days_allowed' => 'required|integer|min:1',
-            'is_recallable' => 'nullable|boolean',
-        ]);
-
-        $type->update([
-            'name' => $request->name,
-            'days_allowed' => $request->days_allowed,
-            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
-        ]);
-
-        return back()->with('success', 'Leave type updated successfully.');
-    }
-
-    public function destroyType(LeaveType $type)
-    {
-        if (Auth::user()->role === 'employee')
-            abort(403);
-
-        // Check if any leaves are using this type
-        if ($type->leaves()->count() > 0) {
-            return back()->with('error', 'Cannot delete leave type that is being used.');
-        }
-
-        $type->delete();
-        return back()->with('success', 'Leave type deleted successfully.');
-    }
-
+    /**
+     * Show create leave form
+     */
     public function create()
     {
-        $types = \App\Models\LeaveType::all();
-
-        // Fetch employees where the linked User is NOT a super_admin
-        $reliefOfficers = \App\Models\Employee::whereHas('user', function ($q) {
+        $types = LeaveType::all();
+        $reliefOfficers = Employee::whereHas('user', function ($q) {
             $q->where('role', '!=', 'super_admin');
         })->where('status', 'active')->get();
 
-        return view('leaves.create', compact('types', 'reliefOfficers'));
+        // Get leave balances for current user
+        $employee = Auth::user()->employee;
+        $leaveBalances = [];
+
+        if ($employee) {
+            foreach ($types as $type) {
+                $balance = EmployeeLeaveBalance::getOrCreate($employee->id, $type->id);
+                $leaveBalances[$type->id] = $balance;
+            }
+        }
+
+        return view('leaves.create', compact('types', 'reliefOfficers', 'leaveBalances'));
     }
 
+    /**
+     * Store a new leave request
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -180,31 +81,149 @@ class LeaveController extends Controller
             'relief_officer_id' => 'nullable|exists:employees,id',
         ]);
 
-        if (!Auth::user()->employee)
+        if (!Auth::user()->employee) {
             return back()->with('error', 'No employee profile linked.');
+        }
 
-        Leave::create([
-            'employee_id' => Auth::user()->employee->id,
-            'leave_type_id' => $request->leave_type_id,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'days' => Carbon::parse($request->start_date)->diffInDays($request->end_date) + 1,
-            'reason' => $request->reason,
-            'relief_officer_id' => $request->relief_officer_id,
-            'status' => 'pending',
-        ]);
+        $employee = Auth::user()->employee;
+        $days = Carbon::parse($request->start_date)->diffInDays($request->end_date) + 1;
 
-        return redirect()->route('leaves.index')->with('success', 'Leave request submitted.');
+        // Check leave balance
+        $balance = EmployeeLeaveBalance::getOrCreate($employee->id, $request->leave_type_id);
+
+        if ($balance->available_days < $days) {
+            return back()->with('error', "Insufficient leave balance. You have {$balance->available_days} days available.");
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create leave request
+            $leave = Leave::create([
+                'employee_id' => $employee->id,
+                'leave_type_id' => $request->leave_type_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'days' => $days,
+                'reason' => $request->reason,
+                'relief_officer_id' => $request->relief_officer_id,
+                'status' => 'pending',
+            ]);
+
+            // Add to pending days
+            $balance->addPendingDays($days);
+
+            // Send notification to HR
+            NotificationHelper::leaveRequested($leave);
+
+            DB::commit();
+            return redirect()->route('personal.leaves')->with('success', 'Leave request submitted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to submit leave request: ' . $e->getMessage());
+        }
     }
 
+    /**
+     * Update leave status (Approve/Reject/Recall)
+     */
+    public function update(Request $request, Leave $leave)
+    {
+        // RECALL LOGIC
+        if ($request->has('recall')) {
+            $request->validate([
+                'recalled_date' => 'required|date',
+            ]);
+
+            DB::beginTransaction();
+            try {
+                $leave->update([
+                    'status' => 'recalled',
+                    'recalled_date' => $request->recalled_date,
+                ]);
+
+                // If leave was approved, restore the used days
+                if ($leave->status === 'approved') {
+                    $balance = EmployeeLeaveBalance::getOrCreate($leave->employee_id, $leave->leave_type_id);
+                    $balance->restoreUsedDays($leave->days);
+                }
+
+                NotificationHelper::leaveRecalled($leave);
+
+                DB::commit();
+                return redirect()->route('leaves.index', ['tab' => 'history'])
+                    ->with('success', 'Employee has been recalled from leave.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to recall leave: ' . $e->getMessage());
+            }
+        }
+
+        // APPROVE / REJECT LOGIC
+        $request->validate([
+            'status' => 'required|in:approved,rejected',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $oldStatus = $leave->status;
+            $updateData = ['status' => $request->status];
+
+            // If rejecting, save the rejection reason
+            if ($request->status === 'rejected' && $request->has('rejection_reason')) {
+                $updateData['rejection_reason'] = $request->rejection_reason;
+            }
+
+            $leave->update($updateData);
+
+            // Update leave balance
+            $balance = EmployeeLeaveBalance::getOrCreate($leave->employee_id, $leave->leave_type_id);
+
+            if ($request->status === 'approved') {
+                // Move from pending to used
+                $balance->approveLeaveDays($leave->days);
+                NotificationHelper::leaveApproved($leave);
+            } elseif ($request->status === 'rejected') {
+                // Remove from pending
+                $balance->removePendingDays($leave->days);
+                NotificationHelper::leaveRejected($leave);
+            }
+
+            DB::commit();
+            return redirect()->route('leaves.index', ['tab' => 'history'])
+                ->with('success', 'Leave request has been ' . $request->status . ' successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to update leave: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cancel a pending leave request
+     */
     public function cancel(Leave $leave)
     {
-        if ($leave->employee_id !== Auth::user()->employee->id)
+        if ($leave->employee_id !== Auth::user()->employee->id) {
             abort(403);
-        if ($leave->status !== 'pending')
+        }
+
+        if ($leave->status !== 'pending') {
             return back()->with('error', 'Cannot cancel processed request.');
-        $leave->delete();
-        return back()->with('success', 'Request cancelled.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Remove from pending balance
+            $balance = EmployeeLeaveBalance::getOrCreate($leave->employee_id, $leave->leave_type_id);
+            $balance->removePendingDays($leave->days);
+
+            $leave->delete();
+
+            DB::commit();
+            return back()->with('success', 'Leave request cancelled successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to cancel leave: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -225,18 +244,104 @@ class LeaveController extends Controller
             ->latest()
             ->paginate(15);
 
-        // Get leave types with usage statistics
+        // Get leave balances for current year
         $leaveTypes = LeaveType::all()->map(function ($type) use ($employee) {
-            $usedDays = Leave::where('employee_id', $employee->id)
-                ->where('leave_type_id', $type->id)
-                ->where('status', 'approved')
-                ->whereYear('start_date', now()->year)
-                ->sum('days');
-
-            $type->days_used = $usedDays;
+            $balance = EmployeeLeaveBalance::getOrCreate($employee->id, $type->id);
+            $type->balance = $balance;
+            $type->days_used = $balance->used_days;
+            $type->days_pending = $balance->pending_days;
+            $type->days_available = $balance->available_days;
             return $type;
         });
 
         return view('personal.leaves', compact('leaves', 'leaveTypes'));
+    }
+
+    /**
+     * Leave Settings (HR Only)
+     */
+    public function settings()
+    {
+        if (Auth::user()->role === 'employee') {
+            abort(403);
+        }
+
+        $types = LeaveType::all();
+        return view('leaves.settings', compact('types'));
+    }
+
+    /**
+     * Store new leave type
+     */
+    public function storeType(Request $request)
+    {
+        if (Auth::user()->role === 'employee') {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'days_allowed' => 'required|integer|min:1',
+            'is_recallable' => 'nullable|boolean',
+        ]);
+
+        LeaveType::create([
+            'name' => $request->name,
+            'days_allowed' => $request->days_allowed,
+            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'Leave type created successfully.');
+    }
+
+    /**
+     * Update leave type
+     */
+    public function updateType(Request $request, LeaveType $type)
+    {
+        if (Auth::user()->role === 'employee') {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'days_allowed' => 'required|integer|min:1',
+            'is_recallable' => 'nullable|boolean',
+        ]);
+
+        $type->update([
+            'name' => $request->name,
+            'days_allowed' => $request->days_allowed,
+            'is_recallable' => $request->has('is_recallable') ? 1 : 0,
+        ]);
+
+        return back()->with('success', 'Leave type updated successfully.');
+    }
+
+    /**
+     * Delete leave type
+     */
+    public function destroyType(LeaveType $type)
+    {
+        if (Auth::user()->role === 'employee') {
+            abort(403);
+        }
+
+        // Check if any leaves are using this type
+        if ($type->leaves()->count() > 0) {
+            return back()->with('error', 'Cannot delete leave type that is being used.');
+        }
+
+        $type->delete();
+        return back()->with('success', 'Leave type deleted successfully.');
+    }
+
+    /**
+     * Show leave details
+     */
+    public function show(Leave $leave)
+    {
+        $leave->load(['employee.department', 'type', 'reliefOfficer']);
+        return view('leaves.show', compact('leave'));
     }
 }

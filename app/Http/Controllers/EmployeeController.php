@@ -171,31 +171,33 @@ class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee)
     {
-        // Verify access code first
-        $request->validate([
-            'access_code' => 'required|string|size:8',
-        ]);
-
-        // Check if access code matches
-        if ($request->access_code !== $employee->access_code) {
-            return back()->withErrors(['access_code' => 'Invalid access code. Please enter the correct 8-digit code.'])->withInput();
-        }
-
         $action = $request->input('action', 'update');
 
         if ($action === 'terminate') {
             // Handle termination - DELETE the employee
             $request->validate([
                 'termination_reason' => 'required|string|max:500',
+                'access_code' => 'required|string|size:8',
             ]);
 
-            // Delete associated user account first
-            if ($employee->user) {
-                $employee->user->delete();
+            // Get the logged-in HR user's access code
+            $hrUser = Auth::user();
+
+            // Check if access code matches the HR user's access code (not employee's)
+            if (!$hrUser->employee || $request->access_code !== $hrUser->employee->access_code) {
+                return back()->withErrors(['access_code' => 'Invalid HR access code. Please enter your correct 8-digit access code.'])->withInput();
             }
 
-            // Delete the employee
+            // Store user reference before deleting employee
+            $user = $employee->user;
+
+            // Delete the employee FIRST (this removes the foreign key reference)
             $employee->delete();
+
+            // Then delete the user account (if exists)
+            if ($user) {
+                $user->delete();
+            }
 
             return redirect()->route('employees.index', ['tab' => 'employees'])->with('success', 'Employee has been terminated and removed from the system.');
         } else {
@@ -204,7 +206,16 @@ class EmployeeController extends Controller
                 'joining_date' => 'required|date',
                 'department_id' => 'required|exists:departments,id',
                 'designation_id' => 'required|exists:designations,id',
+                'access_code' => 'required|string|size:8',
             ]);
+
+            // Get the logged-in HR user's access code
+            $hrUser = Auth::user();
+
+            // Check if access code matches the HR user's access code
+            if (!$hrUser->employee || $request->access_code !== $hrUser->employee->access_code) {
+                return back()->withErrors(['access_code' => 'Invalid HR access code. Please enter your correct 8-digit access code.'])->withInput();
+            }
 
             $employee->update($validated);
 

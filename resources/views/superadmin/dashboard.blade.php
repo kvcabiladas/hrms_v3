@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-lg font-bold text-gray-700">HR Personnel Overview</h2>
         
-        <a href="{{ route('superadmin.createHr') }}" class="flex items-center gap-2 px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium shadow-md transition">
+        <a href="{{ route('superadmin.createHr') }}" class="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-md transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             Add New HR
         </a>
@@ -43,8 +43,8 @@
                         
                         <!-- Action Column with Modal -->
                         <td class="px-6 py-4 text-center" x-data="{ showModal: false }">
-                            <button @click="showModal = true" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-medium transition">
-                                View Credentials
+                            <button @click="showModal = true" class="text-green-600 hover:text-green-700 font-medium text-sm transition">
+                                View
                             </button>
 
                             <!-- Modal Backdrop -->
@@ -133,7 +133,7 @@
                         <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                             <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                             <p>No HR personnel found.</p>
-                            <a href="{{ route('superadmin.createHr') }}" class="text-purple-600 hover:underline mt-2 inline-block">Create the first one</a>
+                            <a href="{{ route('superadmin.createHr') }}" class="text-green-600 hover:underline mt-2 inline-block">Create the first one</a>
                         </td>
                     </tr>
                     @endforelse

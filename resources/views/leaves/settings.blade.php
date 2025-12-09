@@ -79,7 +79,7 @@
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
                                     <button @click="selectedType = {{ json_encode($type) }}; showEditModal = true"
-                                        class="text-green-600 hover:text-green-800 font-medium text-sm transition">
+                                        class="text-blue-600 hover:text-blue-800 font-medium text-sm transition">
                                         Edit
                                     </button>
                                     <button @click="selectedType = {{ json_encode($type) }}; showDeleteModal = true"

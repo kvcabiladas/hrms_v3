@@ -4,26 +4,26 @@
 
 @section('content')
     <div x-data="{ 
-                                                        activeTab: new URLSearchParams(window.location.search).get('tab') || 'employees', 
-                                                        searchQuery: '',
-                                                        sortDept: '',
-                                                        sortJob: '',
-                                                        showAddDept: false,
-                                                        showEditDept: false,
-                                                        showAddJob: false,
-                                                        showEditJob: false,
-                                                        selectedDept: null,
-                                                        selectedJob: null
-                                                    }" x-init="
-                                                        // Update URL when tab changes
-                                                        $watch('activeTab', value => {
-                                                            const url = new URL(window.location);
-                                                            url.searchParams.set('tab', value);
-                                                            window.history.pushState({}, '', url);
-                                                            // Clear search query when switching tabs
-                                                            searchQuery = '';
-                                                        })
-                                                    ">
+                                                                            activeTab: new URLSearchParams(window.location.search).get('tab') || 'employees', 
+                                                                            searchQuery: '',
+                                                                            sortDept: '',
+                                                                            sortJob: '',
+                                                                            showAddDept: false,
+                                                                            showEditDept: false,
+                                                                            showAddJob: false,
+                                                                            showEditJob: false,
+                                                                            selectedDept: null,
+                                                                            selectedJob: null
+                                                                        }" x-init="
+                                                                            // Update URL when tab changes
+                                                                            $watch('activeTab', value => {
+                                                                                const url = new URL(window.location);
+                                                                                url.searchParams.set('tab', value);
+                                                                                window.history.pushState({}, '', url);
+                                                                                // Clear search query when switching tabs
+                                                                                searchQuery = '';
+                                                                            })
+                                                                        ">
         <!-- Tab Navigation -->
         <div class="mb-6 border-b border-gray-200">
             <nav class="flex space-x-8">
@@ -97,11 +97,11 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <template x-for="employee in {{ json_encode($employees->items()) }}.filter(e => 
-                                                                    e.first_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                                                    e.last_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                                                    e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                                    e.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
-                                                                )" :key="employee.id">
+                                                                                        e.first_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                                                        e.last_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                                                        e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                                                        e.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
+                                                                                    )" :key="employee.id">
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-4 text-gray-900" x-text="employee.employee_id"></td>
                                 <td class="px-6 py-4 text-gray-900" x-text="employee.first_name + ' ' + employee.last_name">
@@ -202,8 +202,15 @@
                                             -
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 text-gray-900">
-                                        {{ ucfirst($record->status) }}
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 text-xs font-bold rounded 
+                                                                                    @if($record->status === 'present') bg-green-100 text-green-700
+                                                                                    @elseif($record->status === 'late') bg-yellow-100 text-yellow-700
+                                                                                    @elseif($record->status === 'absent') bg-red-100 text-red-700
+                                                                                    @else bg-gray-100 text-gray-700
+                                                                                    @endif">
+                                            {{ ucfirst($record->status) }}
+                                        </span>
                                     </td>
                                 </tr>
                             @empty
@@ -270,35 +277,35 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <template x-for="dept in (() => {
-                                                    let filtered = {{ Js::from($departments) }}.filter(d => 
-                                                        d.name.toLowerCase().includes(searchQuery.toLowerCase())
-                                                    );
+                                                                        let filtered = {{ Js::from($departments) }}.filter(d => 
+                                                                            d.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                                                        );
 
-                                                    // Sort logic
-                                                    if (sortDept === 'name_asc') {
-                                                        filtered.sort((a, b) => a.name.localeCompare(b.name));
-                                                    } else if (sortDept === 'name_desc') {
-                                                        filtered.sort((a, b) => b.name.localeCompare(a.name));
-                                                    } else if (sortDept === 'employees_desc') {
-                                                        filtered.sort((a, b) => b.employees_count - a.employees_count);
-                                                    } else if (sortDept === 'employees_asc') {
-                                                        filtered.sort((a, b) => a.employees_count - b.employees_count);
-                                                    }
+                                                                        // Sort logic
+                                                                        if (sortDept === 'name_asc') {
+                                                                            filtered.sort((a, b) => a.name.localeCompare(b.name));
+                                                                        } else if (sortDept === 'name_desc') {
+                                                                            filtered.sort((a, b) => b.name.localeCompare(a.name));
+                                                                        } else if (sortDept === 'employees_desc') {
+                                                                            filtered.sort((a, b) => b.employees_count - a.employees_count);
+                                                                        } else if (sortDept === 'employees_asc') {
+                                                                            filtered.sort((a, b) => a.employees_count - b.employees_count);
+                                                                        }
 
-                                                    return filtered;
-                                                })()" :key="dept.id">
+                                                                        return filtered;
+                                                                    })()" :key="dept.id">
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-4 font-medium text-gray-900" x-text="dept.name"></td>
                                 <td class="px-6 py-4 text-gray-900" x-text="(dept.employees_count || 0) + ' employees'">
                                 </td>
-                                <td class="px-6 py-4 text-center">
+                                <td class="px-6 py-4 text-right">
                                     <button @click="selectedDept = dept; showEditDept = true"
-                                        class="text-green-600 hover:text-green-800 text-sm font-medium mr-3 transition">Edit</button>
+                                        class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3 transition">Edit</button>
                                     <form :action="`/departments/${dept.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this department? All associated jobs will be deleted and employees will be set to N/A.')"
-                                            class="text-green-600 hover:text-green-800 text-sm font-medium transition">Delete</button>
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium transition">Delete</button>
                                     </form>
                                 </td>
                             </tr>
@@ -408,42 +415,42 @@
                             <th class="px-6 py-4">Job Title</th>
                             <th class="px-6 py-4">Department</th>
                             <th class="px-6 py-4">Employees</th>
-                            <th class="px-6 py-4 text-center">Actions</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <template x-for="job in (() => {
-                                                let filtered = {{ Js::from($designations) }}.filter(j => 
-                                                    j.name.toLowerCase().includes(searchQuery.toLowerCase())
-                                                );
+                                                                    let filtered = {{ Js::from($designations) }}.filter(j => 
+                                                                        j.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                                                    );
 
-                                                // Sort logic
-                                                if (sortJob === 'name_asc') {
-                                                    filtered.sort((a, b) => a.name.localeCompare(b.name));
-                                                } else if (sortJob === 'name_desc') {
-                                                    filtered.sort((a, b) => b.name.localeCompare(a.name));
-                                                } else if (sortJob === 'department_asc') {
-                                                    filtered.sort((a, b) => (a.department?.name || '').localeCompare(b.department?.name || ''));
-                                                } else if (sortJob === 'employees_desc') {
-                                                    filtered.sort((a, b) => (b.employees_count || 0) - (a.employees_count || 0));
-                                                } else if (sortJob === 'employees_asc') {
-                                                    filtered.sort((a, b) => (a.employees_count || 0) - (b.employees_count || 0));
-                                                }
+                                                                    // Sort logic
+                                                                    if (sortJob === 'name_asc') {
+                                                                        filtered.sort((a, b) => a.name.localeCompare(b.name));
+                                                                    } else if (sortJob === 'name_desc') {
+                                                                        filtered.sort((a, b) => b.name.localeCompare(a.name));
+                                                                    } else if (sortJob === 'department_asc') {
+                                                                        filtered.sort((a, b) => (a.department?.name || '').localeCompare(b.department?.name || ''));
+                                                                    } else if (sortJob === 'employees_desc') {
+                                                                        filtered.sort((a, b) => (b.employees_count || 0) - (a.employees_count || 0));
+                                                                    } else if (sortJob === 'employees_asc') {
+                                                                        filtered.sort((a, b) => (a.employees_count || 0) - (b.employees_count || 0));
+                                                                    }
 
-                                                return filtered;
-                                            })()" :key="job.id">
+                                                                    return filtered;
+                                                                })()" :key="job.id">
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-4 text-gray-900" x-text="job.name"></td>
                                 <td class="px-6 py-4 text-gray-900" x-text="job.department?.name || 'N/A'"></td>
                                 <td class="px-6 py-4 text-gray-900" x-text="(job.employees_count || 0) + ' employees'"></td>
-                                <td class="px-6 py-4 text-center">
+                                <td class="px-6 py-4 text-right">
                                     <button @click="selectedJob = job; showEditJob = true"
-                                        class="text-green-600 hover:text-green-800 text-sm font-medium mr-3 transition">Edit</button>
+                                        class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3 transition">Edit</button>
                                     <form :action="`/designations/${job.id}`" method="POST" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                             onclick="return confirm('Delete this job? Employees with this job will be set to N/A.')"
-                                            class="text-green-600 hover:text-green-800 text-sm font-medium transition">Delete</button>
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium transition">Delete</button>
                                     </form>
                                 </td>
                             </tr>

@@ -138,10 +138,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 2. Resource
     Route::resource('leaves', LeaveController::class);
 
+
     // PAYROLL MANAGEMENT
     Route::get('/payroll/settings', [PayrollController::class, 'settings'])->name('payroll.settings');
-    Route::post('/payroll/settings', [PayrollController::class, 'updateSettings'])->name('payroll.update_settings');
+
+    // Allowances
+    Route::post('/payroll/allowances', [PayrollController::class, 'storeAllowance'])->name('payroll.allowances.store');
+    Route::put('/payroll/allowances/{id}', [PayrollController::class, 'updateAllowance'])->name('payroll.allowances.update');
+    Route::delete('/payroll/allowances/{id}', [PayrollController::class, 'destroyAllowance'])->name('payroll.allowances.destroy');
+
+    // Deductions
+    Route::post('/payroll/deductions', [PayrollController::class, 'storeDeduction'])->name('payroll.deductions.store');
+    Route::put('/payroll/deductions/{id}', [PayrollController::class, 'updateDeduction'])->name('payroll.deductions.update');
+    Route::delete('/payroll/deductions/{id}', [PayrollController::class, 'destroyDeduction'])->name('payroll.deductions.destroy');
+
     Route::resource('payroll', PayrollController::class);
+
 
     // DEPARTMENT MANAGEMENT
     Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
@@ -199,9 +211,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // =========================================================================
     Route::prefix('payroll-manager')->name('payroll-manager.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\PayrollManagerController::class, 'dashboard'])->name('dashboard');
+        Route::get('/payroll-management', [App\Http\Controllers\PayrollManagerController::class, 'payrollManagement'])->name('payroll-management');
         Route::get('/employees', [App\Http\Controllers\PayrollManagerController::class, 'employees'])->name('employees');
         Route::get('/employees/{id}/payroll', [App\Http\Controllers\PayrollManagerController::class, 'employeePayroll'])->name('employee.payroll');
-        Route::put('/employees/{id}/salary', [App\Http\Controllers\PayrollManagerController::class, 'updateBasicSalary'])->name('employee.update-salary');
+        Route::put('/employees/{id}/hourly-rate', [App\Http\Controllers\PayrollManagerController::class, 'updateHourlyRate'])->name('employee.update-hourly-rate');
 
         // Payroll Rules
         Route::get('/rules', [App\Http\Controllers\PayrollManagerController::class, 'rules'])->name('rules');
@@ -214,6 +227,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/templates', [App\Http\Controllers\PayrollManagerController::class, 'storeTemplate'])->name('templates.store');
         Route::put('/templates/{id}', [App\Http\Controllers\PayrollManagerController::class, 'updateTemplate'])->name('templates.update');
         Route::delete('/templates/{id}', [App\Http\Controllers\PayrollManagerController::class, 'destroyTemplate'])->name('templates.destroy');
+
+        // Run Payroll
+        Route::post('/run-payroll', [App\Http\Controllers\PayrollManagerController::class, 'runPayroll'])->name('run-payroll');
     });
 
     // =========================================================================

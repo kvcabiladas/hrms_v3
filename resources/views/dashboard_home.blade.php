@@ -178,7 +178,7 @@
                         pointBorderColor: 'rgba(16, 185, 129, 1)',
                         pointBorderWidth: 2,
                         pointRadius: 4,
-                        fill: true,
+                        fill: false,
                         tension: 0.4
                     }]
                 },

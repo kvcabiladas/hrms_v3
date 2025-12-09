@@ -49,7 +49,15 @@
         <aside :class="sidebarOpen ? 'w-64' : 'w-20'"
             class="bg-white border-r border-gray-200 flex flex-col shrink-0 transition-all duration-300 ease-in-out z-20">
             <div class="h-16 flex items-center px-6 border-b border-gray-100 justify-between">
-                <a href="{{ Auth::user()->role === 'super_admin' ? route('superadmin.dashboard') : route('dashboard') }}"
+                @php
+                    $logoRoute = route('dashboard'); // Default for HR and employees
+                    if (Auth::user()->role === 'super_admin') {
+                        $logoRoute = route('superadmin.dashboard');
+                    } elseif (Auth::user()->role === 'payroll_manager' || (Auth::user()->employee && Auth::user()->employee->designation && Auth::user()->employee->designation->name === 'Payroll Manager')) {
+                        $logoRoute = route('payroll-manager.dashboard');
+                    }
+                @endphp
+                <a href="{{ $logoRoute }}"
                     class="text-2xl font-bold text-green-600 flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition">
                     <span
                         class="bg-green-600 text-white min-w-[2rem] h-8 w-8 rounded flex items-center justify-center text-sm">H</span>
@@ -62,12 +70,12 @@
                 @php
                     $linkClasses = "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 whitespace-nowrap relative";
                     $activeClasses = "bg-green-50 text-green-700 font-medium";
-                    $inactiveClasses = "text-gray-600 hover:bg-gray-50";
+                    $inactiveClasses = "text-gray-600 hover:bg-green-50 hover:text-green-700";
 
                     // Specific styles for sections
-                    $sectionHeader = "px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4 transition-opacity";
-                    $personalHeader = "px-3 text-xs font-bold text-blue-500 uppercase tracking-wider mb-2 mt-4 transition-opacity";
-                    $companyHeader = "px-3 text-xs font-bold text-purple-500 uppercase tracking-wider mb-2 mt-4 transition-opacity";
+                    $sectionHeader = "px-3 text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 mt-4 transition-opacity";
+                    $personalHeader = "px-3 text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 mt-4 transition-opacity";
+                    $companyHeader = "px-3 text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 mt-4 transition-opacity";
                 @endphp
 
                 {{-- SCENARIO 1: SUPER ADMIN --}}
@@ -129,7 +137,7 @@
                     <p x-show="sidebarOpen" class="{{ $personalHeader }}">Personal</p>
 
                     <a href="{{ route('personal.attendance') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.attendance') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.attendance') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Attendance')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -139,7 +147,7 @@
                     </a>
 
                     <a href="{{ route('personal.leaves') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.leaves') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.leaves') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Leaves')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -150,7 +158,7 @@
                     </a>
 
                     <a href="{{ route('personal.payroll') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.payroll') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.payroll') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Payroll')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -177,44 +185,22 @@
                         <span x-show="sidebarOpen">Dashboard</span>
                     </a>
 
-                    <a href="{{ route('payroll-manager.employees') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.employees') || request()->routeIs('payroll-manager.employee.payroll') ? $activeClasses : $inactiveClasses }}"
-                        @mouseenter="showTooltip($event, 'Employee Payroll')" @mouseleave="hideTooltip()">
-                        <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                            </path>
-                        </svg>
-                        <span x-show="sidebarOpen">Employee Payroll</span>
-                    </a>
-
-                    <a href="{{ route('payroll-manager.rules') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.rules') ? $activeClasses : $inactiveClasses }}"
-                        @mouseenter="showTooltip($event, 'Payroll Rules')" @mouseleave="hideTooltip()">
+                    <a href="{{ route('payroll-manager.payroll-management') }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.payroll-management') ? $activeClasses : $inactiveClasses }}"
+                        @mouseenter="showTooltip($event, 'Payroll Management')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
                             </path>
                         </svg>
-                        <span x-show="sidebarOpen">Payroll Rules</span>
-                    </a>
-
-                    <a href="{{ route('payroll-manager.templates') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('payroll-manager.templates') ? $activeClasses : $inactiveClasses }}"
-                        @mouseenter="showTooltip($event, 'Designation Templates')" @mouseleave="hideTooltip()">
-                        <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg>
-                        <span x-show="sidebarOpen">Designation Templates</span>
+                        <span x-show="sidebarOpen">Payroll Management</span>
                     </a>
 
                     {{-- PERSONAL MENU SECOND --}}
                     <p x-show="sidebarOpen" class="{{ $personalHeader }}">Personal</p>
 
                     <a href="{{ route('personal.attendance') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.attendance') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.attendance') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Attendance')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -224,7 +210,7 @@
                     </a>
 
                     <a href="{{ route('personal.leaves') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.leaves') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.leaves') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Leaves')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -235,7 +221,7 @@
                     </a>
 
                     <a href="{{ route('personal.payroll') }}"
-                        class="{{ $linkClasses }} {{ request()->routeIs('personal.payroll') ? 'bg-blue-50 text-blue-600' : $inactiveClasses }}"
+                        class="{{ $linkClasses }} {{ request()->routeIs('personal.payroll') ? $activeClasses : $inactiveClasses }}"
                         @mouseenter="showTooltip($event, 'My Payroll')" @mouseleave="hideTooltip()">
                         <svg class="w-6 h-6 min-w-[1.5rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

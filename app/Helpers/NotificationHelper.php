@@ -57,6 +57,27 @@ class NotificationHelper
     }
 
     /**
+     * Leave requested notification (sent to HR)
+     */
+    public static function leaveRequested($leave)
+    {
+        // Get all HR users and super admins
+        $hrUsers = \App\Models\User::whereIn('role', ['hr', 'super_admin'])->get();
+
+        foreach ($hrUsers as $hrUser) {
+            self::create(
+                $hrUser->id,
+                'leave_requested',
+                'New Leave Request',
+                "{$leave->employee->first_name} {$leave->employee->last_name} has requested {$leave->days} days of {$leave->type->name} leave.",
+                ['leave_id' => $leave->id]
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Leave recalled notification
      */
     public static function leaveRecalled($leave)

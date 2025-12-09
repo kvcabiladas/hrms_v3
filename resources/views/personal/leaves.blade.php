@@ -43,9 +43,24 @@
     </div>
 
     <!-- My Leave History Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+        x-data="{ searchQuery: '', sortBy: '' }">
         <div class="p-6 border-b border-gray-100 bg-gray-50/50">
-            <h3 class="font-bold text-lg text-gray-800">My Leave History</h3>
+            <h3 class="font-bold text-lg text-gray-800 mb-4">My Leave History</h3>
+
+            <!-- Search and Sort -->
+            <div class="flex gap-3">
+                <input type="text" x-model="searchQuery" placeholder="Search by type or reason..."
+                    class="flex-1 max-w-md px-4 py-2 text-sm border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                <select x-model="sortBy"
+                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                    <option value="">Sort By</option>
+                    <option value="date_desc">Date (Newest First)</option>
+                    <option value="date_asc">Date (Oldest First)</option>
+                    <option value="status_pending">Status (Pending First)</option>
+                    <option value="status_approved">Status (Approved First)</option>
+                </select>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -64,24 +79,18 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse($leaves as $leave)
                                 <tr class="hover:bg-gray-50 transition">
-                                    <td class="px-6 py-4">
-                                        <span
-                                            class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-bold">{{ $leave->days }}
-                                            Days</span>
+                                    <td class="px-6 py-4 text-gray-900">{{ $leave->days }} Days</td>
+                                    <td class="px-6 py-4 text-gray-900">{{ $leave->start_date->format('d/m/Y') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">{{ $leave->end_date->format('d/m/Y') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">{{ $leave->type->name ?? 'General' }}</td>
+                                    <td class="px-6 py-4 text-gray-900 truncate max-w-xs" title="{{ $leave->reason }}">
+                                        {{ Str::limit($leave->reason, 30) }}
                                     </td>
-                                    <td class="px-6 py-4">{{ $leave->start_date->format('d/m/Y') }}</td>
-                                    <td class="px-6 py-4">{{ $leave->end_date->format('d/m/Y') }}</td>
-                                    <td class="px-6 py-4">
-                                        <span
-                                            class="px-2 py-1 border border-gray-200 rounded text-xs text-gray-600">{{ $leave->type->name ?? 'General' }}</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-gray-500 truncate max-w-xs" title="{{ $leave->reason }}">
-                                        {{ Str::limit($leave->reason, 30) }}</td>
 
                                     <td class="px-6 py-4">
                                         <span
                                             class="px-2 py-1 rounded text-xs font-bold 
-                                                {{ $leave->status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                                                {{ $leave->status === 'approved' ? 'bg-green-100 text-green-700' :
                         ($leave->status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                             ($leave->status === 'recalled' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700')) }}">
                                             {{ ucfirst($leave->status) }}
@@ -93,8 +102,7 @@
                                             <form action="{{ route('leaves.cancel', $leave->id) }}" method="POST"
                                                 onsubmit="return confirm('Are you sure you want to cancel this request?');">
                                                 @csrf @method('PUT')
-                                                <button
-                                                    class="text-xs bg-gray-100 text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 hover:text-red-600 font-medium transition">
+                                                <button class="text-red-600 hover:text-red-800 font-medium text-sm">
                                                     Cancel
                                                 </button>
                                             </form>

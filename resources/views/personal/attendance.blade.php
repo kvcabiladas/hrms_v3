@@ -13,7 +13,7 @@
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
             </div>
-            <div>
+            <div class="flex-1 text-right">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Days Present</p>
                 <h3 class="text-2xl font-bold text-gray-800">{{ $stats['present'] }} <span
                         class="text-xs font-normal text-gray-400">this month</span></h3>
@@ -27,7 +27,7 @@
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <div>
+            <div class="flex-1 text-right">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Late Arrivals</p>
                 <h3 class="text-2xl font-bold text-yellow-600">{{ $stats['late'] }}</h3>
             </div>
@@ -40,7 +40,7 @@
                     </path>
                 </svg>
             </div>
-            <div>
+            <div class="flex-1 text-right">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Hours</p>
                 <h3 class="text-2xl font-bold text-gray-800">{{ number_format($stats['hours'], 1) }} <span
                         class="text-xs font-normal text-gray-400">hrs</span></h3>
@@ -114,9 +114,37 @@
     </div>
 
     <!-- 3. Attendance History Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" x-data="{ 
+                sortBy: '', 
+                startDate: '', 
+                endDate: '' 
+            }">
         <div class="p-6 border-b border-gray-100">
-            <h3 class="font-bold text-gray-800">My Attendance History</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-800">My Attendance History</h3>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="flex gap-3 items-center">
+                <div class="flex gap-2 items-center">
+                    <label class="text-sm text-gray-600">From:</label>
+                    <input type="date" x-model="startDate"
+                        class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <label class="text-sm text-gray-600">To:</label>
+                    <input type="date" x-model="endDate"
+                        class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                </div>
+                <select x-model="sortBy"
+                    class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none bg-white">
+                    <option value="">Sort By</option>
+                    <option value="date_desc">Date (Newest First)</option>
+                    <option value="date_asc">Date (Oldest First)</option>
+                    <option value="hours_desc">Hours (High to Low)</option>
+                    <option value="hours_asc">Hours (Low to High)</option>
+                </select>
+            </div>
         </div>
         <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
@@ -151,7 +179,7 @@
                         <td class="px-6 py-4">
                             <span
                                 class="px-2.5 py-1 rounded-full text-xs font-medium 
-                                    {{ $record->status === 'present' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                                    {{ $record->status === 'present' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
                                 {{ ucfirst($record->status) }}
                             </span>
                         </td>

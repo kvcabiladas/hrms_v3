@@ -5,12 +5,12 @@
 @section('content')
     <div class="space-y-6">
         <!-- Back Button -->
-        <a href="{{ route('payroll-manager.employees') }}"
+        <a href="{{ route('payroll-manager.payroll-management', ['tab' => 'employees']) }}"
             class="inline-flex items-center text-green-600 hover:text-green-700 font-medium">
             <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
-            Back to Employees
+            Back to Employee List
         </a>
 
         <!-- Employee Header -->
@@ -34,39 +34,39 @@
 
         <!-- Salary Information & Template -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Current Salary -->
+            <!-- Current Hourly Rate -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Basic Salary</h3>
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Hourly Rate</h3>
                 <div class="mb-4">
-                    <p class="text-3xl font-bold text-green-600">₱{{ number_format($employee->basic_salary ?? 0, 2) }}</p>
-                    <p class="text-sm text-gray-500 mt-1">Current monthly basic salary</p>
+                    <p class="text-3xl font-bold text-green-600">₱{{ number_format($employee->hourly_rate ?? 0, 2) }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Current hourly rate</p>
                 </div>
 
-                <!-- Update Salary Form -->
-                <form method="POST" action="{{ route('payroll-manager.employee.update-salary', $employee->id) }}"
+                <!-- Update Hourly Rate Form -->
+                <form method="POST" action="{{ route('payroll-manager.employee.update-hourly-rate', $employee->id) }}"
                     class="mt-4" x-data="{ showForm: false }">
                     @csrf
                     @method('PUT')
 
                     <button type="button" @click="showForm = !showForm"
                         class="text-green-600 hover:text-green-700 font-medium text-sm mb-3">
-                        <span x-show="!showForm">Update Basic Salary</span>
+                        <span x-show="!showForm">Update Hourly Rate</span>
                         <span x-show="showForm">Cancel</span>
                     </button>
 
                     <div x-show="showForm" x-cloak class="space-y-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">New Basic Salary</label>
-                            <input type="number" name="basic_salary" step="0.01" required
-                                value="{{ $employee->basic_salary ?? 0 }}"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Hourly Rate</label>
+                            <input type="number" name="hourly_rate" step="0.01" required
+                                value="{{ $employee->hourly_rate ?? 0 }}"
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500">
-                            @error('basic_salary')
+                            @error('hourly_rate')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                         <button type="submit"
                             class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
-                            Update Salary
+                            Update Hourly Rate
                         </button>
                     </div>
                 </form>
@@ -118,22 +118,23 @@
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Period</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Basic Salary</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Month/Year</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Hourly Rate</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Hours Worked</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Allowances</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Deductions</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Net Salary</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($payrollHistory as $payroll)
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 text-gray-900 font-medium">{{ $payroll->month_year }}</td>
-                                <td class="px-6 py-4 text-gray-900">₱{{ number_format($payroll->basic_salary, 2) }}</td>
-                                <td class="px-6 py-4 text-gray-900">₱{{ number_format($payroll->allowances ?? 0, 2) }}</td>
-                                <td class="px-6 py-4 text-gray-900">₱{{ number_format($payroll->deductions ?? 0, 2) }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900">{{ $payroll->month_year }}</td>
+                                <td class="px-6 py-4 text-gray-900">₱{{ number_format($payroll->hourly_rate ?? 0, 2) }}</td>
+                                <td class="px-6 py-4 text-gray-900">{{ number_format($payroll->total_hours ?? 0, 1) }} hrs</td>
+                                <td class="px-6 py-4 text-green-600">₱{{ number_format($payroll->total_allowance, 2) }}</td>
+                                <td class="px-6 py-4 text-red-600">₱{{ number_format($payroll->total_deduction, 2) }}</td>
                                 <td class="px-6 py-4 font-bold text-green-600">₱{{ number_format($payroll->net_salary, 2) }}
                                 </td>
                                 <td class="px-6 py-4">
@@ -142,11 +143,10 @@
                                         {{ ucfirst($payroll->status) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-gray-900">{{ $payroll->created_at->format('M d, Y') }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">No payroll history yet</td>
+                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">No payroll records found</td>
                             </tr>
                         @endforelse
                     </tbody>

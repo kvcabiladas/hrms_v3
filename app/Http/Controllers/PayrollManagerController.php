@@ -104,6 +104,37 @@ class PayrollManagerController extends Controller
     }
 
     /**
+     * Unified Payroll Management View (with tabs)
+     */
+    public function payrollManagement()
+    {
+        // Get all employees with relationships
+        $employees = Employee::with(['department', 'designation'])
+            ->withCount('payrolls')
+            ->orderBy('first_name')
+            ->get();
+
+        // Get all payroll rules
+        $rules = PayrollRule::orderBy('rule_name')->get();
+
+        // Get all templates with designations
+        $templates = DesignationPayrollTemplate::with(['designation.department'])
+            ->get();
+
+        // Get all designations for template creation
+        $designations = Designation::with('department')
+            ->orderBy('name')
+            ->get();
+
+        return view('payroll-manager.payroll-management', compact(
+            'employees',
+            'rules',
+            'templates',
+            'designations'
+        ));
+    }
+
+    /**
      * Employee List with Payroll Focus
      */
     public function employees(Request $request)
@@ -150,20 +181,20 @@ class PayrollManagerController extends Controller
     }
 
     /**
-     * Update Employee Basic Salary
+     * Update Employee Hourly Rate
      */
-    public function updateBasicSalary(Request $request, $id)
+    public function updateHourlyRate(Request $request, $id)
     {
         $request->validate([
-            'basic_salary' => 'required|numeric|min:0',
+            'hourly_rate' => 'required|numeric|min:0',
         ]);
 
         $employee = Employee::findOrFail($id);
         $employee->update([
-            'basic_salary' => $request->basic_salary,
+            'hourly_rate' => $request->hourly_rate,
         ]);
 
-        return back()->with('success', 'Basic salary updated successfully!');
+        return back()->with('success', 'Hourly rate updated successfully!');
     }
 
     /**
@@ -274,5 +305,113 @@ class PayrollManagerController extends Controller
     {
         DesignationPayrollTemplate::findOrFail($id)->delete();
         return back()->with('success', 'Designation template deleted successfully!');
+    }
+
+    /**
+     * Run Payroll for All Employees
+     */
+    public function runPayroll(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2020|max:' . (date('Y') + 1),
+        ]);
+
+        $month = $request->month;
+        $year = $request->year;
+        $monthYear = date('F Y', mktime(0, 0, 0, $month, 1, $year));
+
+        // Check if payroll already exists for this period
+        $existingPayroll = Payroll::where('month_year', $monthYear)->first();
+        if ($existingPayroll) {
+            return back()->with('error', "Payroll for {$monthYear} has already been processed!");
+        }
+
+        // Get all active employees
+        $employees = Employee::where('status', 'active')
+            ->with(['designation', 'department'])
+            ->get();
+
+        if ($employees->isEmpty()) {
+            return back()->with('error', 'No active employees found to process payroll.');
+        }
+
+        $processedCount = 0;
+        $errors = [];
+
+        foreach ($employees as $employee) {
+            try {
+                // Calculate total hours worked from attendance
+                $totalHours = \App\Models\Attendance::where('employee_id', $employee->id)
+                    ->whereMonth('date', $month)
+                    ->whereYear('date', $year)
+                    ->sum(DB::raw('TIMESTAMPDIFF(HOUR, check_in, check_out)'));
+
+                // Get hourly rate
+                $hourlyRate = $employee->hourly_rate ?? 0;
+
+                // Calculate base salary
+                $baseSalary = $totalHours * $hourlyRate;
+
+                // Calculate allowances
+                $totalAllowance = 0;
+                if ($request->has('include_allowances')) {
+                    $template = DesignationPayrollTemplate::where('designation_id', $employee->designation_id)->first();
+                    if ($template) {
+                        $totalAllowance = $template->base_allowance ?? 0;
+                    }
+                }
+
+                // Calculate deductions
+                $totalDeduction = 0;
+                if ($request->has('include_deductions')) {
+                    // Apply active deduction rules
+                    $deductionRules = PayrollRule::where('is_active', true)
+                        ->where('rule_type', 'percentage')
+                        ->get();
+
+                    foreach ($deductionRules as $rule) {
+                        $totalDeduction += ($baseSalary * $rule->value / 100);
+                    }
+                }
+
+                // Calculate net salary
+                $netSalary = $baseSalary + $totalAllowance - $totalDeduction;
+
+                // Create payroll record
+                Payroll::create([
+                    'employee_id' => $employee->id,
+                    'month_year' => $monthYear,
+                    'hourly_rate' => $hourlyRate,
+                    'total_hours' => $totalHours,
+                    'base_salary' => $baseSalary,
+                    'total_allowance' => $totalAllowance,
+                    'total_deduction' => $totalDeduction,
+                    'net_salary' => $netSalary,
+                    'status' => 'pending',
+                ]);
+
+                $processedCount++;
+
+                // TODO: Send notification if requested
+                // if ($request->has('send_notifications')) {
+                //     // Send email notification to employee
+                // }
+
+            } catch (\Exception $e) {
+                $errors[] = "Failed to process payroll for {$employee->first_name} {$employee->last_name}: " . $e->getMessage();
+            }
+        }
+
+        if ($processedCount > 0) {
+            $message = "Payroll processed successfully for {$processedCount} employee(s) for {$monthYear}.";
+            if (!empty($errors)) {
+                $message .= " However, " . count($errors) . " error(s) occurred.";
+            }
+            return redirect()->route('payroll-manager.payroll-management', ['tab' => 'employees'])
+                ->with('success', $message);
+        } else {
+            return back()->with('error', 'Failed to process payroll. ' . implode(' ', $errors));
+        }
     }
 }
