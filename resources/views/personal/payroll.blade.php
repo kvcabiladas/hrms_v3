@@ -16,7 +16,8 @@
                 </div>
                 <div>
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Basic Salary</p>
-                    <h3 class="text-2xl font-bold text-gray-800">₱{{ number_format($employee->basic_salary ?? 0, 2) }}</h3>
+                    <h3 class="text-2xl font-bold text-gray-800">₱{{ number_format($lastPayroll->basic_salary ?? 0, 2) }}
+                    </h3>
                 </div>
             </div>
         </div>

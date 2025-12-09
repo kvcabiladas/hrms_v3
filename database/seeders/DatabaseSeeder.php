@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Super Admin',
             'username' => 'superadmin',
             'email' => 'superadmin@hrms.com',
-            'password' => Hash::make('password'), 
+            'password' => Hash::make('password'),
             'role' => 'super_admin',
         ]);
 
@@ -54,7 +54,6 @@ class DatabaseSeeder extends Seeder
             'department_id' => $adminDept->id,
             'designation_id' => $superAdminPos->id,
             'joining_date' => now(),
-            'basic_salary' => 0,
             'status' => 'active',
             'gender' => 'other',
             'access_code' => '99999999',

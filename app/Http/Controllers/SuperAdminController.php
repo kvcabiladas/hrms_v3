@@ -111,7 +111,6 @@ class SuperAdminController extends Controller
             'joining_date' => $request->joining_date,
             'department_id' => $hrDept->id,      // AUTO-ASSIGNED
             'designation_id' => $hrDesig->id,    // AUTO-ASSIGNED
-            'basic_salary' => 0,
             'status' => 'active',
             'gender' => 'other',
             'access_code' => $accessCode,
